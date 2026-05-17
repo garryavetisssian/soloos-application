@@ -8,6 +8,11 @@ import {
   shouldRetryOnFallbackModel,
 } from "@/lib/gemini/client";
 import { PROMPTS } from "@/lib/gemini/prompts";
+import {
+  consumeRateLimit,
+  RATE_LIMITS,
+  rateLimitedResponseBody,
+} from "@/lib/rate-limit";
 import { createClient } from "@/lib/supabase/server";
 
 const Body = z.object({
@@ -53,6 +58,14 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+
+  const rl = consumeRateLimit(user.id, "transform", RATE_LIMITS.transform);
+  if (!rl.ok) {
+    return NextResponse.json(rateLimitedResponseBody(rl), {
+      status: 429,
+      headers: { "retry-after": String(rl.resetSeconds) },
+    });
+  }
 
   if (!hasGeminiKey()) {
     console.error("[improve] GOOGLE_GEMINI_API_KEY is not set");

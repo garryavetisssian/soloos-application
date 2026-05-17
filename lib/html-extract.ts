@@ -1,16 +1,20 @@
 // Server-side HTML fetch + cleanup for the job-research route.
 //
-// Hardening:
+// Hardening (delegated to lib/safe-fetch.ts):
 //   - http/https only (block file://, ftp://, etc.)
-//   - Hostname-based SSRF guard: blocks localhost, *.local, IPv4 private/
-//     loopback/link-local ranges, and a couple of IPv6 cases.
-//   - 10s fetch timeout via AbortSignal.
-//   - 2 MB body cap (Content-Length pre-check + post-read sanity check).
+//   - SSRF guard with DNS resolution — catches both literal hostnames
+//     (localhost, 127.0.0.1) AND DNS-rebinding (evil.com → 169.254.169.254)
+//   - Manual redirect walking with guard re-run on every hop
+//   - 10s fetch timeout via AbortSignal
+//
+// Plus, inline here:
+//   - 2 MB body cap (Content-Length pre-check + post-read sanity check)
 //   - Cheerio strips scripts/styles/nav/footer/aside/cookie banners before
 //     extracting visible text. Prefers <article>/main; falls back to body.
 //   - Final text capped at 50 KB before being handed to Gemini.
 
 import * as cheerio from "cheerio";
+import { safeFetch, type SafeFetchError } from "./safe-fetch";
 
 const MAX_HTML_BYTES = 2 * 1024 * 1024; // 2 MB
 const MAX_TEXT_CHARS = 50_000;
@@ -77,107 +81,48 @@ function looksLikeJsRequiredStub(text: string, hostname: string): boolean {
   return false;
 }
 
-function isInternalHostname(hostname: string): boolean {
-  if (!hostname) return true;
-  const h = hostname.toLowerCase();
-  if (
-    h === "localhost" ||
-    h.endsWith(".localhost") ||
-    h.endsWith(".local") ||
-    h === "0.0.0.0" ||
-    h === "::" ||
-    h === "::1"
-  )
-    return true;
-  if (/^127\./.test(h)) return true;
-  if (/^10\./.test(h)) return true;
-  if (/^192\.168\./.test(h)) return true;
-  if (/^169\.254\./.test(h)) return true;
-  const m = h.match(/^172\.(\d+)\./);
-  if (m) {
-    const second = parseInt(m[1], 10);
-    if (second >= 16 && second <= 31) return true;
+// Map safe-fetch error codes onto our local ExtractFailureReason vocab.
+function mapFetchError(reason: SafeFetchError): ExtractFailureReason {
+  switch (reason) {
+    case "invalid_url":
+    case "blocked_protocol":
+      return "invalid_url";
+    case "internal_url":
+      return "internal_url";
+    case "timeout":
+      return "timeout";
+    case "too_many_redirects":
+    case "fetch_failed":
+    case "too_large":
+    default:
+      return "fetch_failed";
   }
-  // IPv6 link-local
-  if (h.startsWith("fe80:") || h.startsWith("[fe80:")) return true;
-  return false;
 }
 
 export async function extractJobPage(rawUrl: string): Promise<ExtractResult> {
-  // ---- 1. URL validation ----
-  let url: URL;
-  try {
-    url = new URL(rawUrl);
-  } catch {
-    return { ok: false, reason: "invalid_url" };
+  // Fetch through the hardened helper. safeFetch handles URL parsing,
+  // protocol whitelist, DNS resolution + private-IP rejection (catches
+  // DNS rebinding), and re-validates on every redirect hop.
+  const fetched = await safeFetch(rawUrl, {
+    timeoutMs: FETCH_TIMEOUT_MS,
+    maxBytes: MAX_HTML_BYTES,
+    init: {
+      headers: {
+        "user-agent": "Mozilla/5.0 (compatible; SoloOSBot/1.0)",
+        accept: "text/html,application/xhtml+xml",
+        "accept-language": "en,en-US;q=0.9",
+      },
+    },
+  });
+  if (!fetched.ok) {
+    return {
+      ok: false,
+      reason: mapFetchError(fetched.reason),
+      detail: fetched.detail,
+    };
   }
-  if (url.protocol !== "http:" && url.protocol !== "https:") {
-    return { ok: false, reason: "invalid_url" };
-  }
-  if (isInternalHostname(url.hostname)) {
-    return { ok: false, reason: "internal_url" };
-  }
-
-  // ---- 2. Fetch (manual redirect walk for SSRF safety) ----
-  // Node's fetch with redirect:"follow" silently chases Location headers
-  // without giving us a hook to re-validate the destination. A public
-  // URL can 302 to http://169.254.169.254 (cloud metadata) or any
-  // private host and we'd happily fetch it. Walking redirects by hand
-  // re-runs the protocol + isInternalHostname guard on every hop.
-  const MAX_REDIRECTS = 5;
-  const fetchHeaders = {
-    "user-agent": "Mozilla/5.0 (compatible; SoloOSBot/1.0)",
-    accept: "text/html,application/xhtml+xml",
-    "accept-language": "en,en-US;q=0.9",
-  };
-  let response: Response;
-  let current = url.toString();
-  let redirectsLeft = MAX_REDIRECTS;
-  while (true) {
-    try {
-      response = await fetch(current, {
-        redirect: "manual",
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-        headers: fetchHeaders,
-      });
-    } catch (err) {
-      const e = err as { name?: string; message?: string };
-      if (e.name === "AbortError" || /timeout|abort/i.test(e.message ?? "")) {
-        return { ok: false, reason: "timeout", detail: e.message };
-      }
-      return { ok: false, reason: "fetch_failed", detail: e.message };
-    }
-    // Terminal response (non-3xx) — fall through to the status checks below.
-    if (response.status < 300 || response.status >= 400) break;
-    // 3xx — validate the Location target before following it.
-    if (redirectsLeft <= 0) {
-      return {
-        ok: false,
-        reason: "fetch_failed",
-        detail: "too many redirects",
-      };
-    }
-    const location = response.headers.get("location");
-    if (!location) break; // odd 3xx with no Location header — treat as terminal.
-    let nextUrl: URL;
-    try {
-      nextUrl = new URL(location, current); // resolves relative redirects.
-    } catch {
-      return {
-        ok: false,
-        reason: "fetch_failed",
-        detail: "invalid redirect target",
-      };
-    }
-    if (nextUrl.protocol !== "http:" && nextUrl.protocol !== "https:") {
-      return { ok: false, reason: "invalid_url" };
-    }
-    if (isInternalHostname(nextUrl.hostname)) {
-      return { ok: false, reason: "internal_url" };
-    }
-    current = nextUrl.toString();
-    redirectsLeft--;
-  }
+  const response = fetched.response;
+  const url = new URL(fetched.finalUrl);
 
   if (
     response.status === 401 ||
