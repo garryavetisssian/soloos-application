@@ -1,0 +1,229 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   SoloOS — Modern dark palette
+   ------------------------------------------------------------
+   Cool, neutral, high-contrast. Single vivid indigo accent.
+   Standard modern SaaS vocabulary, executed cleanly.
+   ============================================================ */
+@layer base {
+  :root {
+    --background: 240 14% 6%;
+    --foreground: 240 6% 96%;
+
+    --surface: 240 11% 9%;
+    --surface-elevated: 240 11% 12%;
+
+    --muted: 240 11% 9%;
+    --muted-foreground: 240 5% 58%;
+
+    --secondary: 240 11% 12%;
+    --secondary-foreground: 240 6% 78%;
+
+    --border: 240 6% 16%;
+    --input: 240 6% 16%;
+
+    /* Vivid indigo — modern SaaS accent, punchier than #6366F1. */
+    --primary: 252 85% 68%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 252 85% 68%;
+    --accent: 252 85% 68%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 158 64% 52%;
+    --warning: 38 92% 50%;
+    --destructive: 0 75% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --radius: 10px;
+
+    /* Cool spectral trio for mesh + accent glows: indigo, cyan, violet. */
+    --accent-indigo: 252 85% 68%;
+    --accent-cyan: 190 91% 62%;
+    --accent-violet: 280 80% 70%;
+
+    color-scheme: dark;
+  }
+
+  html {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "cv11", "cv02";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Body bg transparent so body::before mesh is visible. */
+  body {
+    background-color: transparent;
+  }
+
+  /* Static spectral gradient mesh — cool trio. Fixed, zero JS, ~0 perf. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -10;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        ellipse 65% 50% at 10% -5%,
+        hsl(var(--accent-indigo) / 0.18),
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 55% 45% at 92% 0%,
+        hsl(var(--accent-cyan) / 0.10),
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 75% 60% at 88% 100%,
+        hsl(var(--accent-violet) / 0.12),
+        transparent 60%
+      );
+  }
+
+  *,
+  *::before,
+  *::after {
+    @apply border-border;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring) / 0.5);
+    outline-offset: 2px;
+  }
+}
+
+/* ============================================================
+   Utility classes — glass surfaces, gradients, motion
+   ============================================================ */
+@layer components {
+  /* ----- Surfaces ----- */
+
+  .glass-card {
+    position: relative;
+    background: hsl(var(--surface) / 0.6);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-radius: var(--radius);
+    box-shadow: theme("boxShadow.glass-rest");
+    border: 1px solid transparent;
+  }
+  .glass-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      180deg,
+      hsl(0 0% 100% / 0.10) 0%,
+      hsl(0 0% 100% / 0.02) 50%,
+      hsl(0 0% 100% / 0.04) 100%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .glass-popover {
+    position: relative;
+    background: hsl(var(--surface-elevated) / 0.85);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border-radius: var(--radius);
+    box-shadow: theme("boxShadow.glass-hover");
+    border: 1px solid transparent;
+  }
+  .glass-popover::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      180deg,
+      hsl(0 0% 100% / 0.14),
+      hsl(0 0% 100% / 0.04)
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .glass-chrome {
+    background: hsl(var(--surface) / 0.7);
+    backdrop-filter: blur(24px) saturate(170%);
+    -webkit-backdrop-filter: blur(24px) saturate(170%);
+  }
+
+  /* ----- Motion ----- */
+
+  .lift-on-hover {
+    transition:
+      transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 150ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .lift-on-hover:hover {
+    transform: translateY(-1px);
+    box-shadow: theme("boxShadow.glass-hover");
+  }
+
+  @keyframes reveal-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .reveal > * {
+    animation: reveal-up 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .reveal > *:nth-child(1) { animation-delay: 0ms; }
+  .reveal > *:nth-child(2) { animation-delay: 70ms; }
+  .reveal > *:nth-child(3) { animation-delay: 140ms; }
+  .reveal > *:nth-child(4) { animation-delay: 210ms; }
+  .reveal > *:nth-child(5) { animation-delay: 280ms; }
+  .reveal > *:nth-child(6) { animation-delay: 350ms; }
+
+  /* ----- Accent glow (e.g., dashboard stat tiles) ----- */
+
+  .accent-glow {
+    position: relative;
+    overflow: hidden;
+  }
+  .accent-glow::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(
+      ellipse 80% 60% at 95% -10%,
+      hsl(var(--glow-hsl, var(--primary)) / 0.22),
+      transparent 55%
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+  .accent-glow > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ----- Mono eyebrow label ----- */
+
+  .eyebrow {
+    @apply font-mono uppercase text-muted-foreground;
+    font-size: 11px;
+    line-height: 1.4;
+    letter-spacing: 0.12em;
+  }
+}
