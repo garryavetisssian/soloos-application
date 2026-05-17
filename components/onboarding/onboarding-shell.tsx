@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { skipOnboardingAction } from "@/app/onboarding/actions";
 import { cn } from "@/lib/utils";
@@ -24,13 +25,17 @@ export function OnboardingShell({ nav, assistant, children, className }: Props) 
   return (
     <div className={cn("flex h-screen flex-col bg-background", className)}>
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-border px-6">
-        <div className="flex items-center gap-3">
-          <span
-            aria-hidden
-            className="h-6 w-6 rounded-md bg-gradient-to-br from-primary to-[hsl(var(--accent-violet))] shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.25),0_4px_12px_-4px_hsl(var(--primary)/0.5)]"
+        <div className="flex items-center gap-2.5">
+          <Image
+            src="/logo-icon.png"
+            alt=""
+            width={589}
+            height={223}
+            priority
+            className="h-6 w-auto"
           />
           <span className="text-h3 font-semibold tracking-tight">SoloOS</span>
-          <span className="text-small text-muted-foreground">Onboarding</span>
+          <span className="text-small text-muted-foreground">· Onboarding</span>
         </div>
         <form action={skipOnboardingAction}>
           <button

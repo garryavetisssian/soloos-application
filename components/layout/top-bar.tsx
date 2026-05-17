@@ -9,7 +9,6 @@ import {
   LogOut,
   Menu,
   Search,
-  Settings,
   User,
 } from "lucide-react";
 import Link from "next/link";
@@ -200,9 +199,6 @@ export function TopBar({
 
             <MenuLink href="/settings/profile" icon={<User className="h-4 w-4" />}>
               Profile
-            </MenuLink>
-            <MenuLink href="/settings" icon={<Settings className="h-4 w-4" />}>
-              Settings
             </MenuLink>
             <MenuLink
               href="mailto:support@soloos.app"

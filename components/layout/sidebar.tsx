@@ -1,28 +1,28 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Briefcase,
   LayoutDashboard,
   FileText,
   Mail,
   Kanban,
-  Settings,
-  User,
+  Link2,
   X,
 } from "lucide-react";
 import { useT } from "@/lib/i18n/hooks";
 import { cn } from "@/lib/utils";
 
+// Sidebar nav — top-level workspaces only. Profile / Settings moved to
+// the top-bar account dropdown to keep this list focused on "things you
+// do" rather than "places you configure".
 const NAV = [
   { href: "/dashboard", labelKey: "common.nav.dashboard", icon: LayoutDashboard },
   { href: "/cvs", labelKey: "common.nav.cvs", icon: FileText },
-  { href: "/portfolio", labelKey: "common.nav.portfolio", icon: Briefcase },
   { href: "/cover-letters", labelKey: "common.nav.cover_letters", icon: Mail },
+  { href: "/portfolio", labelKey: "common.nav.links", icon: Link2 },
   { href: "/jobs", labelKey: "common.nav.job_tracker", icon: Kanban },
-  { href: "/settings/profile", labelKey: "common.nav.profile", icon: User },
-  { href: "/settings", labelKey: "common.nav.settings", icon: Settings },
 ] as const;
 
 interface Props {
@@ -81,14 +81,16 @@ export function Sidebar({ mobileOpen, onCloseMobile }: Props) {
 
         <Link
           href="/dashboard"
-          className="group flex items-center gap-2 px-5 pt-6 pb-5"
+          className="group flex items-center gap-2.5 px-5 pt-6 pb-5"
         >
-          <span
-            aria-hidden
+          <Image
+            src="/logo-icon.png"
+            alt=""
+            width={589}
+            height={223}
+            priority
             className={cn(
-              "h-7 w-7 shrink-0 rounded-md",
-              "bg-gradient-to-br from-primary to-[hsl(var(--accent-violet))]",
-              "shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.25),0_4px_14px_-4px_hsl(var(--primary)/0.55)]",
+              "h-6 w-auto shrink-0",
               "transition-transform duration-fast ease-out-quint",
               "group-hover:scale-[1.05]",
             )}

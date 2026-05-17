@@ -1,0 +1,24 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "cvs": "CVs",
+    "links": "Links",
+    "cover_letters": "Cover letters",
+    "job_tracker": "Job tracker"
+  },
+  "language": {
+    "label": "Language",
+    "tooltip": "Change interface language",
+    "english": "English",
+    "russian": "Русский",
+    "armenian": "Հայերեն"
+  },
+  "profile_ready": {
+    "label": "Profile ready"
+  },
+  "toast": {
+    "copied": "Copied to clipboard",
+    "saved_letter": "Saved to My Letters",
+    "pdf_downloaded": "PDF downloaded"
+  }
+}

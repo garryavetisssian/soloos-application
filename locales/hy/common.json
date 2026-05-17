@@ -1,0 +1,24 @@
+{
+  "nav": {
+    "dashboard": "Գործիքներ",
+    "cvs": "CV-ներ",
+    "links": "Հղումներ",
+    "cover_letters": "Ուղեկցող նամակներ",
+    "job_tracker": "Հայտերի հետևում"
+  },
+  "language": {
+    "label": "Լեզու",
+    "tooltip": "Փոխել միջերեսի լեզուն",
+    "english": "English",
+    "russian": "Русский",
+    "armenian": "Հայերեն"
+  },
+  "profile_ready": {
+    "label": "Պրոֆիլը պատրաստ է"
+  },
+  "toast": {
+    "copied": "Պատճենվեց",
+    "saved_letter": "Պահպանվեց Իմ նամակներում",
+    "pdf_downloaded": "PDF-ը ներբեռնվեց"
+  }
+}

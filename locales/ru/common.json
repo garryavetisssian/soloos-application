@@ -1,0 +1,24 @@
+{
+  "nav": {
+    "dashboard": "Дашборд",
+    "cvs": "Резюме",
+    "links": "Ссылки",
+    "cover_letters": "Сопроводительные",
+    "job_tracker": "Заявки"
+  },
+  "language": {
+    "label": "Язык",
+    "tooltip": "Сменить язык интерфейса",
+    "english": "English",
+    "russian": "Русский",
+    "armenian": "Հայերեն"
+  },
+  "profile_ready": {
+    "label": "Профиль готов"
+  },
+  "toast": {
+    "copied": "Скопировано в буфер обмена",
+    "saved_letter": "Сохранено в Мои письма",
+    "pdf_downloaded": "PDF загружен"
+  }
+}

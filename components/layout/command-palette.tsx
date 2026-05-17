@@ -5,15 +5,14 @@ import { useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   ArrowRight,
-  Briefcase,
   FileText,
   Kanban,
   LayoutDashboard,
+  Link2,
   LogOut,
   Mail,
   Plus,
   Search,
-  Settings,
   Sparkles,
   User,
 } from "lucide-react";
@@ -57,12 +56,12 @@ const ITEMS: Item[] = [
     keywords: ["library", "saved", "letters"],
   },
   {
-    id: "nav-portfolio",
-    label: "Portfolio",
+    id: "nav-links",
+    label: "Links",
     hint: "GitHub, Figma, articles, app store",
-    icon: <Briefcase className="h-4 w-4" />,
+    icon: <Link2 className="h-4 w-4" />,
     action: { kind: "navigate", href: "/portfolio" },
-    keywords: ["work links", "github", "figma"],
+    keywords: ["portfolio", "work links", "github", "figma"],
   },
   {
     id: "nav-cvs",
@@ -81,17 +80,11 @@ const ITEMS: Item[] = [
   },
   {
     id: "nav-profile",
-    label: "Career profile",
+    label: "Profile",
+    hint: "Identity, skills, target role, preferences",
     icon: <User className="h-4 w-4" />,
     action: { kind: "navigate", href: "/settings/profile" },
-    keywords: ["profile", "edit", "settings"],
-  },
-  {
-    id: "nav-settings",
-    label: "Settings",
-    icon: <Settings className="h-4 w-4" />,
-    action: { kind: "navigate", href: "/settings" },
-    keywords: ["preferences", "account"],
+    keywords: ["settings", "preferences", "account", "edit"],
   },
   {
     id: "action-new-job",
