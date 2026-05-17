@@ -679,7 +679,17 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
               : tt("left_card.subtitle_manual")
           }
         />
-        <ModeSelector value={mode} onChange={chooseMode} disabled={busy} />
+        {/* Mode tabs are pure UI state — never gate them on isLocked.
+            Only disable while a local cover-letter action is in flight
+            (generate / transform / translate). Otherwise the user can
+            always switch between paste-link and paste-description. */}
+        <ModeSelector
+          value={mode}
+          onChange={chooseMode}
+          disabled={
+            generating || activeTransform != null || translating != null
+          }
+        />
 
         <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3">
           {mode === "url" ? (
