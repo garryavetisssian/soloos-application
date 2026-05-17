@@ -1,0 +1,162 @@
+{
+  "title": "Portfolio",
+  "subtitle": "Public links to your work — websites, repos, design files, articles. SoloOS uses them to write cover letters that mention specific projects you've shipped.",
+  "section_title": "Your links ({{count}})",
+  "add_link": "Add link",
+  "add_first": "Add your first link",
+  "how_it_works": {
+    "title": "How this works",
+    "body": "Paste a public URL. SoloOS checks the link is reachable and viewable to anyone, then reads its content to summarise what's inside. Cover letters reference these links naturally — by name and product, not generic platitudes."
+  },
+  "public_only": {
+    "label": "Public links only.",
+    "body": "Links that require sign-in (private Figma files, locked GitHub repos, paywalled pages) can't be saved here — we need to be able to read them to make them useful."
+  },
+  "examples": {
+    "portfolio_title": "Personal portfolio",
+    "portfolio_body": "Your own site — any URL that loads without a sign-in. Best when projects are clearly named.",
+    "github_title": "GitHub repos",
+    "github_body": "Public repositories. SoloOS reads the README, languages, and topics.",
+    "figma_title": "Public Figma files",
+    "figma_body": "Set the file to 'Anyone with the link can view' in Figma before adding.",
+    "article_title": "Articles & posts",
+    "article_body": "Medium, Substack, dev.to, your own blog. Great for writers, PMs, engineers.",
+    "app_title": "App Store / Play / Itch",
+    "app_body": "Live products you've shipped — even better if you also link the source repo."
+  },
+  "empty": {
+    "title": "No portfolio links yet",
+    "body": "Add your first link to enrich your cover letters with specific project context."
+  },
+  "type": {
+    "portfolio": "Personal site",
+    "github": "GitHub",
+    "figma": "Figma",
+    "dribbble": "Dribbble",
+    "behance": "Behance",
+    "app_store": "Store listing",
+    "article": "Article",
+    "video": "Video",
+    "other": "Link"
+  },
+  "status": {
+    "broken": "We can't read this link anymore — re-check or replace it.",
+    "ready_for_letters": "Ready to use in cover letters",
+    "off_for_letters": "Off — not used in cover letters"
+  },
+  "quality": {
+    "aria_label": "Link quality: {{score}} out of 100",
+    "hint_label": "Tip:",
+    "band": {
+      "pending": "Analysis pending",
+      "weak": "Needs work",
+      "basic": "Basic",
+      "good": "Good",
+      "great": "Strong"
+    },
+    "signal": {
+      "pages": "pages",
+      "frames": "frames",
+      "named_frames": "named frames",
+      "components": "components",
+      "styles": "styles",
+      "text": "text layers",
+      "meaningful_text": "meaningful text layers",
+      "images": "image fills",
+      "specific_content": "Real work shown",
+      "ui_text": "Real UI text",
+      "polished": "Polished",
+      "cover_blank": "Blank cover",
+      "title_set": "Title",
+      "summary_set": "Summary",
+      "summary_vague": "Vague summary",
+      "hint_set": "Hint"
+    },
+    "issue": {
+      "broken": "the link can no longer be read. Re-check or replace it.",
+      "pending": "still being processed. Re-check in a moment.",
+      "toggle_off": "this link is turned off for cover letters — flip the toggle below to use it.",
+      "generic_title": "the file is called \"Untitled\" (or similar). Rename it in Figma to something specific.",
+      "vague_summary": "the summary looks like a guess from the filename (\"likely contains design work\"). Rename your file and frames descriptively in Figma, then re-check — or write the summary yourself with the pencil icon.",
+      "no_summary": "no AI summary yet. Open the file in Figma, set a representative thumbnail (right-click a frame → Set as thumbnail), then re-check.",
+      "no_hint": "no cover-letter hint. Edit with the pencil icon to tell the AI when to mention this link.",
+      "sparse_thumbnail": "the file's cover preview is nearly blank. In Figma, right-click your best frame → Set as thumbnail, then re-check.",
+      "few_pages": "the file only has one page. Multi-page files give the AI a clearer picture of the project's scope.",
+      "few_named_frames": "few frames have meaningful names — most are still \"Frame 87\", \"Group 24\". Rename your screens in Figma for richer summaries.",
+      "no_named_frames": "no frames have descriptive names. Renaming \"Frame 1\" → \"Onboarding\" is the single biggest thing you can do to improve this score.",
+      "noisy_frames": "this file has many frames but almost none are named (\"Frame 145\", \"Frame 9543\"). That's noise — it would feed wrong information into cover letters. Rename your frames in Figma to fix.",
+      "no_components": "no reusable components in the file. Adding components signals design-system thinking; not critical but helps for system-design roles.",
+      "no_text_content": "no text on the canvas. If this file is supposed to contain UI copy or product text, add it — Gemini reads it verbatim.",
+      "placeholder_text": "most text layers are placeholders (\"01\", \"x\", page numbers). Real UI copy gives the AI much more to work with — write actual content on the canvas, or remove the placeholders.",
+      "signals_missing": "we haven't analysed this Figma file's structure yet. Click the re-check icon to capture frame, component, and text counts — without that we can't score it honestly.",
+      "api_locked": "Figma's free-plan rate limit is currently blocking deep analysis of this specific file (separate from re-checking). We can see its cover but not its frames or components, so the score is conservative. The limit clears in a few days, or upgrading your Figma plan removes it.",
+      "visualquality_missing": "we haven't graded this file's cover yet. Click re-check to let Gemini look at the thumbnail and rate whether the cover shows real, specific design work — that's the signal that separates a polished file from a placeholder cover slide.",
+      "cover_looks_blank": "Gemini looked at the cover and saw mostly blank space or placeholder content — no identifiable product, screens, or UI. The score is capped accordingly. Open the file in Figma, right-click your best frame → Set as thumbnail, then re-check.",
+      "analysis_pending": "We couldn't analyze this file yet — Figma's free-plan rate limit on this specific file is active and may take up to 3 days to clear, and our AI fallback also didn't produce anything this attempt. You don't need to fix anything; the file is fine. Click re-check periodically — once the limit clears we'll capture the analysis automatically and the link will be ready to use."
+    }
+  },
+  "tips": {
+    "title": "Tips for better results",
+    "figma_thumbnail": "Figma: right-click your best frame → Set as thumbnail. The system reads that image, so a representative cover dramatically improves the summary.",
+    "figma_naming": "Figma: rename pages and frames descriptively (\"Onboarding\" not \"Frame 1\"). Names are read alongside the thumbnail.",
+    "github_readme": "GitHub: make sure the repo README explains what the project does in the first paragraph — that's what the AI reads.",
+    "edit_summary": "If the auto-summary is off or generic, click the pencil icon and rewrite it yourself. Your text overrides the AI output and persists.",
+    "quality_bar": "The score bar on each card shows how confidently the AI can reference that link in your letters. Aim for Good or Great."
+  },
+  "use_toggle": {
+    "on_title": "Used in cover letters",
+    "on_body": "SoloOS may reference this when relevant to the role.",
+    "off_title": "Not used in cover letters",
+    "off_body": "Won't appear in any generated letter while this is off.",
+    "locked_title": "Locked — quality too low",
+    "locked_body": "This link can't be used in cover letters until its score reaches {{threshold}}. Fix the issue above and re-check.",
+    "pending_title": "Waiting for analysis",
+    "pending_body": "Figma's free-plan rate limit on this file is active (can take up to 3 days). Once it clears we'll capture the analysis and the toggle becomes available.",
+    "try_recheck_now": "Try re-check now",
+    "aria": "Use this link in cover letters"
+  },
+  "empty_summary": {
+    "body": "No summary yet — rename your pages and frames descriptively in Figma, then click re-check to refresh.",
+    "pending_body": "Analysis pending — Figma's free-plan rate limit on this file is active. We'll auto-grade it as soon as the limit clears (up to a few days)."
+  },
+  "actions": {
+    "edit": "Edit",
+    "copy": "Copy URL",
+    "recheck": "Re-check link",
+    "delete": "Remove",
+    "delete_confirm": "Click again to remove",
+    "close": "Close",
+    "cancel": "Cancel"
+  },
+  "toast": {
+    "added": "Link added to your portfolio",
+    "saved": "Changes saved",
+    "rechecked": "Link re-checked",
+    "deleted": "Link removed",
+    "copied": "Copied to clipboard",
+    "copy_failed": "Couldn't copy the link",
+    "recheck_failed": "Couldn't re-check the link",
+    "delete_failed": "Couldn't remove the link",
+    "enabled": "Link enabled for cover letters",
+    "disabled": "Link disabled — won't appear in letters",
+    "toggle_failed": "Couldn't update this link"
+  },
+  "add_modal": {
+    "title": "Add a portfolio link",
+    "body": "Paste a public URL. We'll check it's reachable, then SoloOS will summarise what's inside.",
+    "placeholder": "https://your-site.com/project",
+    "checking": "Checking & reading…",
+    "add": "Add link",
+    "done": "Done"
+  },
+  "edit_modal": {
+    "title": "Edit link details",
+    "title_label": "Title",
+    "title_placeholder": "Project or page name",
+    "summary_label": "Summary (what's inside)",
+    "summary_placeholder": "Short description of what this link shows.",
+    "hint_label": "Cover-letter hint (when to mention it)",
+    "hint_placeholder": "e.g. Reference when applying to mobile-game roles.",
+    "save": "Save"
+  }
+}

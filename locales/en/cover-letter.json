@@ -1,0 +1,202 @@
+{
+  "page": {
+    "title": "Cover letters",
+    "subtitle": "Generate tailored applications using your SoloOS profile."
+  },
+  "library": {
+    "title": "Cover letters",
+    "subtitle": "Manage your saved cover letters and create new applications.",
+    "new_button": "New cover letter",
+    "back_to_library": "Back to library",
+    "untitled": "Untitled letter",
+    "open": "Open",
+    "count": "{{count}} saved",
+    "search_placeholder": "Search by company, role, or content",
+    "filter_language": "Language",
+    "filter_source": "Source",
+    "filter_all_languages": "All languages",
+    "filter_all_sources": "All sources",
+    "source_manual": "Pasted description",
+    "source_job_link": "Job link",
+    "no_results": "No cover letters match your filters.",
+    "empty": {
+      "title": "No cover letters yet",
+      "body": "Generate your first tailored application letter.",
+      "cta": "Create cover letter"
+    }
+  },
+  "generator": {
+    "title": "New cover letter",
+    "subtitle": "Generate a tailored application letter from a job link or pasted description."
+  },
+  "detail": {
+    "save_changes": "Save changes",
+    "last_edited": "Last edited {{when}}"
+  },
+  "left_card": {
+    "title": "Job description",
+    "subtitle_url": "Paste a job link. SoloOS will fetch the page and pull out company and role context before writing.",
+    "subtitle_manual": "Paste the job post. SoloOS will match it with your profile and generate a tailored letter."
+  },
+  "mode": {
+    "url": "Use job link",
+    "manual": "Paste job description",
+    "recommended": "AI recommended"
+  },
+  "url_helper": "Using a job link allows SoloOS to analyze the company, product, and job context automatically.",
+  "manual_tip": "Tip: using a job link usually produces better results.",
+  "manual_placeholder": "Paste the full job description here. Include role requirements, company context, and responsibilities for better results.",
+  "url_placeholder": "https://company.com/careers/role",
+  "language": {
+    "detected": "Detected",
+    "source": "Source language",
+    "output": "Output",
+    "english": "English",
+    "russian": "Russian",
+    "armenian": "Armenian",
+    "label_short": "Language",
+    "detected_tooltip": "Detected from the original job description",
+    "auto_detected": "auto-detected"
+  },
+  "channel": {
+    "label": "Sending to",
+    "platform": "Job platform",
+    "platform_desc": "Vacancy site, careers page, or ATS — formal cover letter.",
+    "direct": "Direct message",
+    "direct_desc": "LinkedIn, Telegram, or email — short humanized message.",
+    "recipient_label": "Recipient",
+    "recipient_placeholder": "First name or full name (optional)",
+    "recipient_use_detected": "Use \"{{name}}\""
+  },
+  "translation": {
+    "translate": "Translate",
+    "to_english": "Translate to English",
+    "to_russian": "Translate to Russian",
+    "to_armenian": "Translate to Armenian",
+    "translating": "Translating to {{target}}…",
+    "translated_to": "Translated to {{target}}",
+    "current_language": "Current language",
+    "toast_translated": "Translated to {{target}}"
+  },
+  "smart_suggestion": {
+    "intro": "This job description is in {{detected}}.",
+    "question": "Would you like the cover letter in {{detected}}?",
+    "button": "Generate in {{detected}}"
+  },
+  "buttons": {
+    "generate": "Generate cover letter",
+    "generating": "Generating tailored letter…",
+    "regenerate": "Regenerate",
+    "regenerating": "Regenerating…",
+    "make_stronger": "Make stronger",
+    "strengthening": "Strengthening…",
+    "make_shorter": "Make shorter",
+    "shortening": "Shortening…",
+    "more": "More",
+    "analyze": "Analyze",
+    "analyzing": "Analyzing…",
+    "continue_manually": "Continue manually",
+    "back": "Back",
+    "try_again": "Try again",
+    "try_another_link": "Try another link"
+  },
+  "more_menu": {
+    "confident": "Make more confident",
+    "confident_desc": "Stronger statements, less hedging.",
+    "friendly": "Make more friendly",
+    "friendly_desc": "Warmer, conversational, still professional.",
+    "formal": "Make more formal",
+    "formal_desc": "Polished register, no contractions.",
+    "startup": "Adapt for startup tone",
+    "startup_desc": "Direct, energetic, not corporate."
+  },
+  "right_card": {
+    "title": "Generated cover letter",
+    "subtitle": "Edit, copy, or refine your letter."
+  },
+  "actions": {
+    "copy": "Copy",
+    "copy_success": "Copied to clipboard",
+    "save": "Save to My Letters",
+    "save_tooltip_done": "Saved to My Letters",
+    "saved": "Saved",
+    "saved_tooltip": "Stored in your My Letters list",
+    "export_pdf": "Export PDF",
+    "pdf_success": "PDF downloaded",
+    "delete": "Delete",
+    "delete_confirm": "Click again to delete",
+    "delete_success": "Letter deleted"
+  },
+  "placeholders": {
+    "generating": "Generating tailored letter…"
+  },
+  "research": {
+    "empty_title": "Paste a job link above and click Analyze",
+    "empty_body": "SoloOS will read the page and pull out company and role context.",
+    "analyzing_title": "Analyzing job page…",
+    "analyzing_body": "Reading the page text, then extracting company and role context.",
+    "analyzed_fallback": "Job page analyzed",
+    "extracting_context": "Extracting Context",
+    "try_another_link": "Try another link",
+    "paste_manually": "Paste description manually",
+    "failure_default_title": "We couldn't read this job page automatically.",
+    "failure_default_subtext": "You can paste the job description manually instead.",
+    "failure_network_title": "We couldn't reach the page.",
+    "failure_network_subtext": "Check your connection and try again, or paste the description manually.",
+    "expand": {
+      "title": "Expand for easier reading",
+      "close": "Close expanded view"
+    },
+    "translating_title": "Translating to {{target}}…",
+    "translating_body": "Re-rendering the job context in your selected language.",
+    "translation_failed_title": "We couldn't translate this job context automatically.",
+    "translation_failed_body": "You can keep the existing context, re-analyze the link, or paste the description manually.",
+    "language_meta": {
+      "source": "Source language",
+      "output": "Display language",
+      "translated": "Translated for your selected language",
+      "show_original": "Show original",
+      "hide_original": "Hide original",
+      "original_excerpt_label": "Original excerpt"
+    },
+    "context": {
+      "company": "Company",
+      "product": "Product",
+      "responsibilities": "Responsibilities",
+      "requirements": "Requirements",
+      "tone": "Tone"
+    }
+  },
+  "empty_state": {
+    "title": "Your tailored cover letter will appear here",
+    "body": "Add a job description and generate your first draft."
+  },
+  "meta": {
+    "generated_in": "Generated in",
+    "source_job_language": "Source job language:",
+    "based_on_research": "Based on your profile + job analysis",
+    "based_on_description": "Based on your profile + job description",
+    "just_now": "Just now",
+    "minutes_ago": "{{count}}m ago",
+    "hours_ago": "{{count}}h ago",
+    "days_ago": "{{count}}d ago"
+  },
+  "errors": {
+    "ai_unavailable_title": "AI is temporarily unavailable",
+    "ai_unavailable_body": "SoloOS couldn't generate the letter right now. Please try again in a moment.",
+    "rate_limited_title": "Too many requests",
+    "rate_limited_body": "Please wait a moment before trying again.",
+    "ai_failed_title": "Couldn't generate letter",
+    "ai_failed_body": "Please try again.",
+    "sign_in_title": "Sign in required",
+    "sign_in_body": "Please sign in to generate cover letters.",
+    "network_title": "Couldn't reach the AI",
+    "network_body": "Check your connection and try again.",
+    "copy_title": "Couldn't copy",
+    "copy_body": "Your browser blocked clipboard access. Select and copy manually.",
+    "save_title": "Couldn't save letter",
+    "pdf_title": "Couldn't export PDF",
+    "pdf_body": "Try again in a moment.",
+    "delete_title": "Couldn't delete letter"
+  }
+}
