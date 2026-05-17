@@ -9,6 +9,7 @@
 // treated as "publicly viewable enough" to enrich.
 
 import { extractJobPage } from "@/lib/html-extract";
+import { safeFetch } from "@/lib/safe-fetch";
 import { classifyUrl } from "./classify";
 import {
   extractFigmaApiContent,
@@ -151,23 +152,29 @@ function friendlyMessageForCode(
 // downloading it. Used to detect sparse Figma thumbnails (which
 // indicate an empty cover) at validation time. Returns 0 on any
 // failure — the score downgrades gracefully.
+//
+// The URL here is a thumbnail URL returned by Figma's API (i.e., it's
+// indirectly attacker-influenceable). Routed through safeFetch so a
+// malicious / compromised response can't redirect us to private IPs
+// or use protocols other than http/https.
 async function probeContentLength(url: string | null): Promise<number> {
   if (!url) return 0;
-  try {
-    const res = await fetch(url, {
+  const fetched = await safeFetch(url, {
+    timeoutMs: 8_000,
+    init: {
       method: "HEAD",
       headers: {
         "user-agent": "Mozilla/5.0 (SoloOSBot/1.0)",
         accept: "image/*",
       },
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (!res.ok) return 0;
-    const cl = parseInt(res.headers.get("content-length") ?? "0", 10);
-    return Number.isFinite(cl) && cl > 0 ? cl : 0;
-  } catch {
-    return 0;
-  }
+    },
+  });
+  if (!fetched.ok) return 0;
+  const cl = parseInt(
+    fetched.response.headers.get("content-length") ?? "0",
+    10,
+  );
+  return Number.isFinite(cl) && cl > 0 ? cl : 0;
 }
 
 export async function validateWorkLink(rawUrl: string): Promise<ValidationResult> {
