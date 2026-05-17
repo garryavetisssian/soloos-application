@@ -3,12 +3,12 @@ import { redirect } from "next/navigation";
 import type { Route } from "next";
 import {
   ArrowRight,
+  ArrowUpRight,
   Briefcase,
   FileText,
   Heart,
   Link2,
   Mail,
-  Search,
   Sparkles,
   Wand2,
 } from "lucide-react";
@@ -121,50 +121,57 @@ export default async function DashboardPage() {
   return (
     <div className="mx-auto max-w-[1280px] px-6 py-8 sm:px-8">
       {/* ---- Hero ---- */}
-      <section className="reveal space-y-6">
-        <header>
+      <section className="space-y-6">
+        <header className="reveal">
           <h1 className="text-h1 font-semibold tracking-tight">
-            {greeting}, {firstName}
+            {greeting},{" "}
+            <span className="bg-gradient-to-r from-primary via-[hsl(var(--accent-violet))] to-[hsl(var(--accent-cyan))] bg-clip-text text-transparent">
+              {firstName}
+            </span>
           </h1>
           <p className="pt-1.5 text-body text-secondary-foreground">
             Here&apos;s what&apos;s moving in your career today.
           </p>
         </header>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="reveal grid grid-cols-2 gap-3 sm:grid-cols-4">
           <AnimatedStatTile
             label="Saved letters"
             value={savedLetters.length}
             icon={<Mail className="h-4 w-4" />}
             accent="violet"
+            href="/cover-letters"
           />
           <AnimatedStatTile
             label="In progress"
             value={activeApplications}
             icon={<Briefcase className="h-4 w-4" />}
             accent="cyan"
+            href="/jobs"
           />
           <AnimatedStatTile
             label="Portfolio links"
             value={readyLinksCount}
             icon={<Link2 className="h-4 w-4" />}
             accent="emerald"
+            href="/portfolio"
           />
           <AnimatedStatTile
             label="CVs"
             value={cvCount}
             icon={<FileText className="h-4 w-4" />}
             accent="primary"
+            href="/cvs"
           />
         </div>
       </section>
 
       {/* ---- Main grid ---- */}
       <div className="mt-10 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-        <div className="space-y-6">
+        <div className="reveal space-y-6">
           <QuickActionsSection />
           <RecentActivitySection activities={activities} />
         </div>
-        <aside className="space-y-6">
+        <aside className="reveal space-y-6">
           <ProfileHealthSection
             completeness={completeness}
             threshold={COVER_LETTER_MIN_COMPLETENESS}
@@ -415,33 +422,57 @@ function RecentActivitySection({ activities }: { activities: ActivityItem[] }) {
             </p>
           </div>
         ) : (
-          <ul className="space-y-3">
-            {activities.map((a, i) => (
-              <li key={`${a.kind}-${a.at}-${i}`} className="flex items-start gap-3">
-                <span
-                  className={cn(
-                    "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-                    a.kind === "cover_letter"
-                      ? "bg-violet-500/15 text-violet-400"
-                      : "bg-cyan-500/15 text-cyan-400",
-                  )}
-                >
-                  {a.kind === "cover_letter" ? (
-                    <Mail className="h-3.5 w-3.5" />
-                  ) : (
-                    <Briefcase className="h-3.5 w-3.5" />
-                  )}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-small text-foreground">
-                    {a.title}
-                  </div>
-                  <div className="text-small text-muted-foreground">
-                    {formatRelative(a.at)}
-                  </div>
-                </div>
-              </li>
-            ))}
+          <ul className="-mx-2 space-y-0.5">
+            {activities.map((a, i) => {
+              const href: Route =
+                a.kind === "cover_letter" ? "/cover-letters" : "/jobs";
+              return (
+                <li key={`${a.kind}-${a.at}-${i}`}>
+                  <Link
+                    href={href}
+                    className={cn(
+                      "group flex items-start gap-3 rounded-md px-2 py-2",
+                      "transition-colors duration-fast ease-out-quint",
+                      "hover:bg-white/[0.04]",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+                        "transition-transform duration-fast ease-out-quint",
+                        "group-hover:scale-110",
+                        a.kind === "cover_letter"
+                          ? "bg-violet-500/15 text-violet-400"
+                          : "bg-cyan-500/15 text-cyan-400",
+                      )}
+                    >
+                      {a.kind === "cover_letter" ? (
+                        <Mail className="h-3.5 w-3.5" />
+                      ) : (
+                        <Briefcase className="h-3.5 w-3.5" />
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-small text-foreground">
+                        {a.title}
+                      </div>
+                      <div className="text-small text-muted-foreground">
+                        {formatRelative(a.at)}
+                      </div>
+                    </div>
+                    <ArrowUpRight
+                      className={cn(
+                        "h-3.5 w-3.5 shrink-0 text-muted-foreground",
+                        "opacity-0 -translate-x-1",
+                        "transition-all duration-fast ease-out-quint",
+                        "group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-foreground",
+                      )}
+                      aria-hidden
+                    />
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

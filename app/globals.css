@@ -52,6 +52,13 @@
     font-feature-settings: "ss01", "cv11", "cv02";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Smooth scroll on in-page anchor links (e.g. landing nav → #features).
+       Browsers automatically respect prefers-reduced-motion when `smooth`
+       is set, so users who opt out of motion still get an instant jump. */
+    scroll-behavior: smooth;
+    /* When jumping to an anchor, leave room for the sticky-feeling nav at
+       the top so the section heading isn't tucked against the viewport edge. */
+    scroll-padding-top: 5rem;
   }
 
   /* Body bg transparent so body::before mesh is visible. */
