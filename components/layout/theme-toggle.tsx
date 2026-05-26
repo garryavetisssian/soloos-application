@@ -19,7 +19,14 @@ export function ThemeToggle({ className }: { className?: string }) {
   function toggle() {
     const next = !isDark;
     setIsDark(next);
-    document.documentElement.classList.toggle("dark", next);
+    const root = document.documentElement;
+    // Suppress transitions for the instant of the swap so text/bg colors
+    // flip cleanly instead of fading through mid-transition grays.
+    root.classList.add("theme-switching");
+    root.classList.toggle("dark", next);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => root.classList.remove("theme-switching"));
+    });
     try {
       localStorage.setItem("soloos.theme", next ? "dark" : "light");
     } catch {

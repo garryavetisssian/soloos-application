@@ -136,7 +136,7 @@
     "analyzing_title": "Analyzing job page…",
     "analyzing_body": "Reading the page text, then extracting company and role context.",
     "analyzed_fallback": "Job page analyzed",
-    "extracting_context": "Extracting Context",
+    "extracting_context": "Extracted Context",
     "thin_preview_title": "Only a short preview was extractable",
     "thin_preview_body": "This site (hh.ru, LinkedIn, or similar) blocks full reads, so we used the public preview only. For a richer letter, paste the full job description manually below.",
     "try_another_link": "Try another link",

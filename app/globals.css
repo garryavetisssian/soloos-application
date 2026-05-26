@@ -38,12 +38,14 @@
     --input: 165 10% 88%;
 
     /* ---- Accent — emerald -------------------------------- */
-    --primary: 160 84% 33%;
+    /* Deep emerald so WHITE button text clears WCAG AA (~4.3:1).
+       The lighter, "fresh" side of the brand lives in --accent-soft. */
+    --primary: 161 88% 24%;
     --primary-foreground: 0 0% 100%;
-    --ring: 160 84% 39%;
-    --accent: 160 84% 33%;
+    --ring: 161 84% 30%;
+    --accent: 161 88% 24%;
     --accent-foreground: 0 0% 100%;
-    --accent-soft: 152 70% 95%;
+    --accent-soft: 152 68% 94%;
 
     /* `cinnabar` is remapped to teal so the few gradients that
        blend primary→cinnabar read as an on-brand emerald→teal. */
@@ -126,6 +128,12 @@
   ::selection {
     background: hsl(var(--accent) / 0.18);
     color: hsl(var(--foreground));
+  }
+
+  /* While toggling theme, kill all transitions so colors flip instantly
+     instead of fading through muddy mid-transition grays. */
+  .theme-switching * {
+    transition: none !important;
   }
 }
 

@@ -10,15 +10,128 @@
 // Output: plain text in the same shape extractJobPage returns, so the
 // rest of the job-research pipeline doesn't change.
 
+import * as cheerio from "cheerio";
 import {
   GEMINI_FALLBACK_MODEL,
   GEMINI_MODEL,
   getGemini,
   shouldRetryOnFallbackModel,
 } from "@/lib/gemini/client";
+import { safeFetch } from "@/lib/safe-fetch";
+import { htmlToText } from "./jsonld";
 
 const THUMB_TIMEOUT_MS = 15_000;
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
+const PAGE_TIMEOUT_MS = 12_000;
+const MAX_PAGE_BYTES = 4 * 1024 * 1024;
+
+// hh.ru is a SPA that serves a "please enable JavaScript" stub to bots, but
+// the full vacancy is embedded in a <template id="HH-Lux-InitialState">
+// hydration blob (entity-encoded JSON). Parsing that gives the complete
+// description without the API (which 403s non-RU/datacenter IPs) or Vision.
+// This is the primary hh.ru path; Vision on the thumbnail is the fallback.
+
+interface HhVacancyView {
+  name?: string;
+  company?: { name?: string };
+  employer?: { name?: string };
+  area?: { name?: string };
+  description?: string;
+  compensation?: {
+    from?: number;
+    to?: number;
+    currencyCode?: string;
+    noCompensation?: unknown;
+  } | null;
+  keySkills?: { keySkill?: Array<{ stringValue?: string } | string> } | string[] | null;
+  workExperience?: string;
+}
+
+function decodeHtmlEntities(s: string): string {
+  // Reuse cheerio's parser to decode &quot; &lt; &amp; etc. in one pass.
+  try {
+    return cheerio.load(`<t>${s}</t>`)("t").text();
+  } catch {
+    return s;
+  }
+}
+
+function composeHhText(vv: HhVacancyView, fallbackTitle: string): string {
+  const title = (vv.name ?? "").trim() || fallbackTitle;
+  const company = (vv.company?.name ?? vv.employer?.name ?? "").trim();
+  const lines: string[] = [];
+  if (title || company) {
+    lines.push(`${title || "Role"}${company ? ` — ${company}` : ""}`);
+  }
+  if (vv.area?.name) lines.push(`Location: ${vv.area.name}`);
+  const c = vv.compensation;
+  if (c && !c.noCompensation && (c.from || c.to)) {
+    const amount = [c.from, c.to].filter((n) => typeof n === "number").join("–");
+    lines.push(`Salary: ${amount} ${c.currencyCode ?? ""}`.trim());
+  }
+  // keySkills shape varies; pull string values defensively.
+  const ks = vv.keySkills;
+  const skills: string[] = Array.isArray(ks)
+    ? (ks as string[])
+    : (ks?.keySkill ?? []).map((k) =>
+        typeof k === "string" ? k : (k.stringValue ?? ""),
+      );
+  const skillStr = skills.filter(Boolean).join(", ");
+  if (skillStr) lines.push(`Key skills: ${skillStr}`);
+
+  const description = htmlToText(vv.description ?? "");
+  return [lines.join("\n"), description].filter(Boolean).join("\n\n").trim();
+}
+
+/**
+ * Fetch a hh.ru vacancy page and parse its embedded hydration state for the
+ * full vacancy text. Works without the (IP-blocked) API or Vision.
+ */
+export async function fetchHhVacancyFromHtml(rawUrl: string): Promise<HhResult> {
+  const id = parseHhVacancyId(rawUrl);
+  if (!id) return { ok: false, reason: "invalid_url" };
+  const res = await safeFetch(rawUrl, {
+    timeoutMs: PAGE_TIMEOUT_MS,
+    maxBytes: MAX_PAGE_BYTES,
+    init: {
+      headers: {
+        "user-agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+        accept: "text/html,application/xhtml+xml",
+        "accept-language": "ru,en;q=0.9",
+      },
+    },
+  });
+  if (!res.ok || !res.response.ok) return { ok: false, reason: "thumb_unavailable" };
+  let html: string;
+  try {
+    html = await res.response.text();
+  } catch {
+    return { ok: false, reason: "thumb_unavailable" };
+  }
+  const m = html.match(
+    /<template[^>]*id="HH-Lux-InitialState"[^>]*>([\s\S]*?)<\/template>/,
+  );
+  if (!m) return { ok: false, reason: "vision_failed" };
+  let state: { vacancyView?: HhVacancyView };
+  try {
+    state = JSON.parse(decodeHtmlEntities(m[1]));
+  } catch {
+    return { ok: false, reason: "vision_failed" };
+  }
+  const vv = state.vacancyView;
+  if (!vv || (!vv.name && !vv.description)) {
+    return { ok: false, reason: "vision_failed" };
+  }
+  const company = (vv.company?.name ?? vv.employer?.name ?? "").trim();
+  return {
+    ok: true,
+    url: rawUrl,
+    title: (vv.name ?? "").trim() || company || "hh.ru vacancy",
+    metaDescription: company,
+    text: composeHhText(vv, "Vacancy"),
+  };
+}
 
 /**
  * Parse the numeric vacancy ID out of an hh.ru URL.

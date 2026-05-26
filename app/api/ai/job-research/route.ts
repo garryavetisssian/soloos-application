@@ -8,14 +8,10 @@ import {
   shouldRetryOnFallbackModel,
 } from "@/lib/gemini/client";
 import { PROMPTS } from "@/lib/gemini/prompts";
-import {
-  extractJobPage,
-  type ExtractFailureReason,
-  type ExtractResult,
-} from "@/lib/html-extract";
+import type { ExtractFailureReason } from "@/lib/html-extract";
 import { detectDominantLanguage } from "@/lib/i18n/normalize";
 import type { OutputLanguage } from "@/lib/i18n/types";
-import { fetchHhVacancy, isHhUrl } from "@/lib/job-research/hh-ru";
+import { extractJob } from "@/lib/job-research/extract";
 import type { JobResearch } from "@/lib/job-research/types";
 import {
   consumeRateLimit,
@@ -103,31 +99,6 @@ const FAILURE_COPY: Record<
   },
 };
 
-// Adapt hh.ru Vision result into extractJobPage's shape so the rest
-// of the route can stay generic. We use ExtractFailureReason values
-// for failure so the existing failure-routing logic still works.
-async function fetchHhVacancyAsExtract(url: string): Promise<ExtractResult> {
-  const r = await fetchHhVacancy(url);
-  if (r.ok) {
-    return {
-      ok: true,
-      url: r.url,
-      title: r.title,
-      metaDescription: r.metaDescription,
-      text: r.text,
-    };
-  }
-  // Map hh.ru failure reasons onto our generic codes so the user-
-  // facing copy stays consistent.
-  const reason: ExtractFailureReason =
-    r.reason === "invalid_url"
-      ? "invalid_url"
-      : r.reason === "thumb_unavailable"
-        ? "not_found"
-        : "fetch_failed";
-  return { ok: false, reason };
-}
-
 // Hostname-specific overrides for js_required so users hitting a
 // well-known platform get a concrete next step instead of generic
 // advice. Add entries as we discover more anti-bot sites.
@@ -212,23 +183,13 @@ export async function POST(request: Request) {
     );
   }
 
-  // ---- 1. Fetch + clean ----
-  // hh.ru blocks static fetches and unauthenticated API access, but
-  // serves a full server-rendered preview PNG for every vacancy. We
-  // route those URLs through a Vision pipeline and translate the
-  // result into the same { title, text } shape the rest of the
-  // pipeline expects. If Vision also fails we fall through to the
-  // generic extractor (which will surface the friendlier hh.ru-
-  // specific js_required message we added earlier).
-  let extraction = isHhUrl(parsed.data.url)
-    ? await fetchHhVacancyAsExtract(parsed.data.url)
-    : await extractJobPage(parsed.data.url);
-  if (!extraction.ok && isHhUrl(parsed.data.url)) {
-    // Vision failed; try the regular extractor so the user still
-    // gets the hh.ru-specific js_required message instead of a
-    // mysterious "vision_failed".
-    extraction = await extractJobPage(parsed.data.url);
-  }
+  // ---- 1. Fetch + extract ----
+  // The orchestrator tries, in order: a platform adapter (public JSON APIs
+  // for hh.ru / Greenhouse / Lever / …), then a generic page read
+  // (schema.org JobPosting JSON-LD, preferred, else cleaned body text),
+  // then a Vision read of the page's preview image for JS-only / stub
+  // pages. All paths return the same ExtractResult shape.
+  const extraction = await extractJob(parsed.data.url);
   if (!extraction.ok) {
     console.warn("[job-research] extraction failed", {
       url: parsed.data.url,

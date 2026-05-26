@@ -181,15 +181,17 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
     return research ? research.source_language : null;
   }, [mode, jobDescription, research]);
 
-  // Effective output language. Resolution order:
+  // Effective output / display language. Resolution order:
   //   1. Explicit user choice from the dropdown — wins forever once set.
-  //   2. Detected source language from the job content — so a Russian JD
-  //      defaults to a Russian letter without any clicks.
-  //   3. UI locale — fallback before any input has been provided.
-  // The smart-suggestion banner only fires when (1) disagrees with the
-  // source — i.e. the user deliberately picked a different language.
+  //   2. The UI locale — so research, tags, and the letter are shown and
+  //      written in the language the user is using the app in. Switching
+  //      the interface language follows here and re-translates the research.
+  // The detected source language is kept separately (sourceLanguage) for
+  // the "Source language" label and the smart-suggestion banner, which now
+  // offers "this job is in Russian — generate in Russian?" when the job
+  // language differs from the UI language.
   const outputLanguage: OutputLanguage =
-    outputLanguageOverride ?? sourceLanguage ?? localeToOutputLanguage(locale);
+    outputLanguageOverride ?? localeToOutputLanguage(locale);
 
   const hasJobInput =
     mode === "manual" ? jobDescription.trim().length > 0 : research != null;
@@ -249,17 +251,15 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
       const res = await fetch("/api/ai/job-research", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        // Only forward an explicit target language when the user picked
-        // one from the dropdown. Otherwise let the server detect the
-        // page's source language and emit research directly in it —
-        // that way `outputLanguage` (which defaults to sourceLanguage)
-        // matches the research's output_language on first paint and the
-        // normalize-research follow-up step doesn't have to run.
+        // Always emit the research in the effective display language (the
+        // dropdown override, else the UI locale). A Russian job opened in
+        // an English UI comes back already translated to English — summary,
+        // company/product context, responsibilities, requirements, and the
+        // signal tags. source_language is still detected server-side for
+        // the "Source language" label.
         body: JSON.stringify({
           url,
-          ...(outputLanguageOverride
-            ? { targetLanguage: outputLanguageOverride }
-            : {}),
+          targetLanguage: outputLanguageOverride ?? localeToOutputLanguage(locale),
         }),
       });
       const data = (await res.json().catch(() => ({}))) as
@@ -989,22 +989,20 @@ function ModeTab({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-small font-medium transition-colors",
+        "flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-3 py-1.5 text-small font-medium transition-colors",
         active
-          ? "bg-accent-soft text-primary"
+          ? "bg-surface text-foreground shadow-sm"
           : "text-muted-foreground hover:text-foreground",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >
-      {icon}
+      <span className={cn(active ? "text-primary" : "")}>{icon}</span>
       <span>{label}</span>
       {recommended && (
         <span
           className={cn(
-            "ml-1 rounded-full px-1.5 py-0.5 text-label leading-none",
-            active
-              ? "bg-primary/15 text-primary"
-              : "bg-surface text-muted-foreground",
+            "ml-1 whitespace-nowrap rounded-full px-1.5 py-0.5 text-label font-semibold leading-none",
+            "bg-primary text-primary-foreground",
           )}
         >
           {recommendedLabel ?? "AI recommended"}
@@ -1690,7 +1688,7 @@ function SetupPanel({
               onChange={(e) => onOutputChange(e.target.value as OutputLanguage)}
               aria-label={t("language.output")}
               disabled={disabled}
-              className="h-8 w-auto px-2 py-1 text-small"
+              className="h-8 w-auto pl-2.5 pr-8 py-1 text-small"
             >
               {OUTPUT_LANGUAGES.map((lang) => (
                 <option key={lang} value={lang}>
@@ -1785,7 +1783,7 @@ function ChannelPill({
       className={cn(
         "rounded-md px-2.5 py-1 text-small font-medium transition-colors",
         active
-          ? "bg-accent-soft text-primary"
+          ? "bg-surface text-foreground shadow-sm"
           : "text-muted-foreground hover:text-foreground",
         disabled && "cursor-not-allowed opacity-60",
       )}

@@ -15,6 +15,7 @@
 
 import * as cheerio from "cheerio";
 import { safeFetch, type SafeFetchError } from "./safe-fetch";
+import { parseJobPostingLd, jobPostingToText } from "./job-research/jsonld";
 
 const MAX_HTML_BYTES = 2 * 1024 * 1024; // 2 MB
 const MAX_TEXT_CHARS = 50_000;
@@ -37,6 +38,10 @@ export interface ExtractSuccess {
   title: string;
   metaDescription: string;
   text: string;
+  /** og:image / twitter:image, when present — used for Vision fallback. */
+  ogImage?: string;
+  /** Where the text came from, for logging. */
+  source?: "jsonld" | "body";
 }
 
 export interface ExtractFailure {
@@ -44,6 +49,9 @@ export interface ExtractFailure {
   reason: ExtractFailureReason;
   httpStatus?: number;
   detail?: string;
+  /** Carried through on js_required / low_content so the orchestrator can
+      attempt a Vision read of the preview image. */
+  ogImage?: string;
 }
 
 export type ExtractResult = ExtractSuccess | ExtractFailure;
@@ -168,6 +176,22 @@ export async function extractJobPage(rawUrl: string): Promise<ExtractResult> {
 
   // ---- 4. Cheerio cleanup ----
   const $ = cheerio.load(html);
+
+  // Capture structured data BEFORE stripping <script>. The schema.org
+  // JobPosting JSON-LD block is the authoritative, server-rendered source
+  // that survives JS-only pages; og:image feeds the Vision fallback.
+  const ldScripts: string[] = [];
+  $('script[type="application/ld+json"]').each((_, el) => {
+    ldScripts.push($(el).text());
+  });
+  const jobPosting = parseJobPostingLd(ldScripts);
+  const ogImage = (
+    $('meta[property="og:image"]').attr("content") ||
+    $('meta[name="twitter:image"]').attr("content") ||
+    $('meta[property="twitter:image"]').attr("content") ||
+    ""
+  ).trim();
+
   $("script, style, noscript, iframe, link[rel='stylesheet']").remove();
   $("nav, footer, aside").remove();
   $(
@@ -201,17 +225,33 @@ export async function extractJobPage(rawUrl: string): Promise<ExtractResult> {
   text = text.replace(/\s+/g, " ").trim();
   if (text.length > MAX_TEXT_CHARS) text = text.slice(0, MAX_TEXT_CHARS);
 
+  // Prefer the JSON-LD JobPosting when it carries a real description: it's
+  // the authoritative, server-rendered source and works even when the
+  // visible body is a JS shell or a "please enable JavaScript" stub.
+  if (jobPosting && jobPosting.description.length >= MIN_USEFUL_TEXT_CHARS) {
+    return {
+      ok: true,
+      url: url.toString(),
+      title: title || jobPosting.title,
+      metaDescription: metaDescription || jobPosting.company,
+      text: jobPostingToText(jobPosting),
+      ogImage,
+      source: "jsonld",
+    };
+  }
+
   // Some sites (notably hh.ru) serve a "please enable JavaScript" stub
   // to non-browser fetches and only render real content client-side.
   // Detect a few well-known phrases — across English, Russian, and
   // Armenian — so we can return a specific failure code instead of
   // letting Gemini see the stub and decide it's "not a job page".
+  // ogImage is carried through so the orchestrator can try a Vision read.
   if (looksLikeJsRequiredStub(text, url.hostname)) {
-    return { ok: false, reason: "js_required" };
+    return { ok: false, reason: "js_required", ogImage };
   }
 
   if (text.length < MIN_USEFUL_TEXT_CHARS) {
-    return { ok: false, reason: "low_content" };
+    return { ok: false, reason: "low_content", ogImage };
   }
 
   return {
@@ -220,5 +260,7 @@ export async function extractJobPage(rawUrl: string): Promise<ExtractResult> {
     title,
     metaDescription,
     text,
+    ogImage,
+    source: "body",
   };
 }

@@ -358,17 +358,19 @@ function ReadyBody({
   const [showRaw, setShowRaw] = useState(true);
   const [showOriginal, setShowOriginal] = useState(true);
   const wasTranslated = research.source_language !== research.output_language;
-  // A "thin preview" is when the extractor returned little more than a
-  // title + chips — none of the body fields the cover letter actually
-  // leans on. Most common on hh.ru / LinkedIn URLs where the public
-  // thumbnail is all we can see. We surface a soft hint so the user
-  // knows to paste the description manually for a richer letter.
-  const isThinPreview =
-    !research.job_summary?.trim() &&
-    !research.responsibilities?.trim() &&
-    !research.requirements?.trim() &&
-    !research.company_context?.trim() &&
-    !research.product_context?.trim();
+  // "Detailed context" = the body fields the cover letter actually leans
+  // on. hh.ru / LinkedIn URLs often yield only a title + summary + chips
+  // from the public preview, leaving these empty. When none are present
+  // we surface a soft hint (so the user knows to paste the description for
+  // a richer letter) instead of rendering an empty "Extracted Context"
+  // box. The job_summary, language meta, and signal chips still render.
+  const hasDetailedContext =
+    !!research.company_context?.trim() ||
+    !!research.product_context?.trim() ||
+    !!research.responsibilities?.trim() ||
+    !!research.requirements?.trim() ||
+    !!research.tone?.trim();
+  const isThinPreview = !hasDetailedContext;
   return (
     <div className="flex flex-col gap-4">
       <LanguageMetaRow
@@ -403,48 +405,50 @@ function ReadyBody({
         </ul>
       )}
 
-      <details
-        className="group rounded-lg border border-border bg-surface p-4"
-        open={showRaw}
-        onToggle={(e) => setShowRaw((e.target as HTMLDetailsElement).open)}
-      >
-        <summary className="flex cursor-pointer list-none items-center justify-between text-small font-medium text-foreground">
-          {t("research.extracting_context")}
-          <ChevronDown
-            className={cn(
-              "h-3.5 w-3.5 text-muted-foreground transition-transform",
-              showRaw && "rotate-180",
+      {hasDetailedContext && (
+        <details
+          className="group rounded-lg border border-border bg-surface p-4"
+          open={showRaw}
+          onToggle={(e) => setShowRaw((e.target as HTMLDetailsElement).open)}
+        >
+          <summary className="flex cursor-pointer list-none items-center justify-between text-small font-medium text-foreground">
+            {t("research.extracting_context")}
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 text-muted-foreground transition-transform",
+                showRaw && "rotate-180",
+              )}
+            />
+          </summary>
+          <div className="mt-4 space-y-4 text-body leading-7 text-muted-foreground">
+            {research.company_context && (
+              <ContextRow label={t("research.context.company")}>
+                {research.company_context}
+              </ContextRow>
             )}
-          />
-        </summary>
-        <div className="mt-4 space-y-4 text-body leading-7 text-muted-foreground">
-          {research.company_context && (
-            <ContextRow label={t("research.context.company")}>
-              {research.company_context}
-            </ContextRow>
-          )}
-          {research.product_context && (
-            <ContextRow label={t("research.context.product")}>
-              {research.product_context}
-            </ContextRow>
-          )}
-          {research.responsibilities && (
-            <ContextRow label={t("research.context.responsibilities")}>
-              {research.responsibilities}
-            </ContextRow>
-          )}
-          {research.requirements && (
-            <ContextRow label={t("research.context.requirements")}>
-              {research.requirements}
-            </ContextRow>
-          )}
-          {research.tone && (
-            <ContextRow label={t("research.context.tone")}>
-              {research.tone}
-            </ContextRow>
-          )}
-        </div>
-      </details>
+            {research.product_context && (
+              <ContextRow label={t("research.context.product")}>
+                {research.product_context}
+              </ContextRow>
+            )}
+            {research.responsibilities && (
+              <ContextRow label={t("research.context.responsibilities")}>
+                {research.responsibilities}
+              </ContextRow>
+            )}
+            {research.requirements && (
+              <ContextRow label={t("research.context.requirements")}>
+                {research.requirements}
+              </ContextRow>
+            )}
+            {research.tone && (
+              <ContextRow label={t("research.context.tone")}>
+                {research.tone}
+              </ContextRow>
+            )}
+          </div>
+        </details>
+      )}
 
       {wasTranslated && research.raw_excerpt && (
         <details
