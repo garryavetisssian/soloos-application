@@ -55,7 +55,7 @@ export function MoreMenu({
           align="end"
           sideOffset={6}
           className={cn(
-            "z-50 min-w-[260px] overflow-hidden rounded-lg border border-border bg-surface-elevated p-1 shadow-lg shadow-black/30",
+            "z-50 min-w-[260px] overflow-hidden rounded-lg border border-border bg-surface p-1 shadow-md",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1",
           )}
         >
@@ -68,7 +68,7 @@ export function MoreMenu({
                 disabled={isBusy}
                 className={cn(
                   "flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 outline-none transition-colors",
-                  "focus:bg-surface focus:text-foreground",
+                  "focus:bg-surface-elevated focus:text-foreground",
                   "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
                 )}
               >

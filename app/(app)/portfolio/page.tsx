@@ -7,6 +7,7 @@ import {
   PencilLine,
   Plus,
 } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import { getServerT } from "@/lib/i18n/server";
 import { getCurrentProfile } from "@/lib/profile";
 import { createClient } from "@/lib/supabase/server";
@@ -41,23 +42,24 @@ export default async function PortfolioPage() {
   const tt = (key: string, vars?: Record<string, string | number>) =>
     t(`portfolio.${key}`, vars);
 
-
   return (
-    <div className="mx-auto flex max-w-[1080px] flex-col px-6 py-8 sm:px-8">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="text-h1 tracking-tight">{tt("title")}</h1>
-          <p className="pt-1 text-body text-secondary-foreground">
-            {tt("subtitle")}
-          </p>
-        </div>
+    <div className="mx-auto flex max-w-[1080px] flex-col px-6 py-10 sm:px-10">
+      <header className="animate-fade-in">
+        <h1 className="text-h1 font-semibold text-foreground">{tt("title")}</h1>
+        <p className="mt-2 max-w-[64ch] text-body text-muted-foreground">
+          {tt("subtitle")}
+        </p>
       </header>
 
-      <section className="mt-6 rounded-2xl border border-border bg-surface p-6">
-        <h2 className="text-h3 tracking-tight">{tt("how_it_works.title")}</h2>
-        <p className="pt-1 text-small text-muted-foreground">
+      {/* How it works — a clean primer card. */}
+      <section className="mt-8">
+        <h2 className="text-h3 font-semibold text-foreground">
+          {tt("how_it_works.title")}
+        </h2>
+        <p className="mt-2 max-w-[72ch] text-small text-muted-foreground">
           {tt("how_it_works.body")}
         </p>
+
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <ExampleCard
             icon={<Globe className="h-4 w-4" />}
@@ -85,42 +87,36 @@ export default async function PortfolioPage() {
             body={tt("examples.app_body")}
           />
         </div>
-        <p className="pt-5 text-small text-muted-foreground">
-          <strong className="text-foreground">{tt("public_only.label")}</strong>{" "}
+
+        <p className="mt-4 text-small text-muted-foreground">
+          <span className="font-medium text-foreground">
+            {tt("public_only.label")}
+          </span>{" "}
           {tt("public_only.body")}
         </p>
 
-        {/* Tips for better results — one paragraph per source-type that
-            explains specifically what the user can do to maximise what
-            SoloOS extracts. Useful for the cases (sparse Figma cover,
-            generic frame names, README-light GitHub repos) where the
-            auto-summary alone falls short. */}
-        <div className="mt-6 rounded-xl border border-border bg-surface-elevated/30 p-4">
-          <h3 className="inline-flex items-center gap-2 text-small font-medium text-foreground">
-            <Lightbulb className="h-3.5 w-3.5 text-primary" />
+        {/* Tips — soft accent callout. */}
+        <div className="mt-6 rounded-xl border border-border bg-accent-soft p-5">
+          <h3 className="inline-flex items-center gap-2 text-label font-medium uppercase tracking-wide text-primary">
+            <Lightbulb className="h-3.5 w-3.5" />
             {tt("tips.title")}
           </h3>
-          <ul className="mt-3 space-y-2 text-small text-muted-foreground">
-            <li className="flex items-start gap-2">
-              <span className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
-              <span>{tt("tips.figma_thumbnail")}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
-              <span>{tt("tips.figma_naming")}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
-              <span>{tt("tips.github_readme")}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
-              <span>{tt("tips.edit_summary")}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="mt-1.5 inline-block h-1 w-1 shrink-0 rounded-full bg-muted-foreground" />
-              <span>{tt("tips.quality_bar")}</span>
-            </li>
+          <ul className="mt-3 space-y-2 text-small text-foreground">
+            {[
+              "figma_thumbnail",
+              "figma_naming",
+              "github_readme",
+              "edit_summary",
+              "quality_bar",
+            ].map((k) => (
+              <li key={k} className="flex items-start gap-2.5">
+                <span
+                  aria-hidden
+                  className="mt-[7px] inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-primary/70"
+                />
+                <span>{tt(`tips.${k}`)}</span>
+              </li>
+            ))}
           </ul>
         </div>
       </section>
@@ -140,14 +136,14 @@ function ExampleCard({
   body: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-surface-elevated/40 p-4">
+    <Card className="p-4">
       <div className="flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-surface-elevated text-muted-foreground">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md border border-border bg-surface-elevated text-muted-foreground">
           {icon}
         </span>
         <h3 className="text-small font-medium text-foreground">{title}</h3>
       </div>
       <p className="pt-2 text-small text-muted-foreground">{body}</p>
-    </div>
+    </Card>
   );
 }

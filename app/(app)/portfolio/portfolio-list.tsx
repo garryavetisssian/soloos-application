@@ -58,6 +58,49 @@ export function PortfolioList({ links }: Props) {
   const { isLocked } = useActionLock();
   const [addOpen, setAddOpen] = useState(false);
   const [prefillUrl, setPrefillUrl] = useState("");
+  // IDs that the user has just deleted. We hide them from the rendered
+  // grid the instant the server action resolves, so the toast and the
+  // row's disappearance happen together — router.refresh() then catches
+  // up in the background and replaces this state with the fresh
+  // server-side list. When `links` shifts (a fresh server render), any
+  // ID that's no longer present can be dropped from the set.
+  const [removedIds, setRemovedIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  useEffect(() => {
+    setRemovedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const present = new Set(links.map((l) => l.id));
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (present.has(id)) {
+          next.add(id);
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [links]);
+
+  const visibleLinks = links.filter((l) => !removedIds.has(l.id));
+  const handleOptimisticDelete = (id: string) => {
+    setRemovedIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
+  const handleDeleteFailed = (id: string) => {
+    setRemovedIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
 
   function openWithUrl(url: string) {
     setPrefillUrl(url);
@@ -68,7 +111,7 @@ export function PortfolioList({ links }: Props) {
     <section className="mt-6 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-h3 tracking-tight">
-          {tt("section_title", { count: links.length })}
+          {tt("section_title", { count: visibleLinks.length })}
         </h2>
         <Button onClick={() => openWithUrl("")} disabled={isLocked}>
           <Plus className="h-4 w-4" />
@@ -76,13 +119,18 @@ export function PortfolioList({ links }: Props) {
         </Button>
       </div>
 
-      {links.length === 0 ? (
+      {visibleLinks.length === 0 ? (
         <EmptyState onAdd={() => openWithUrl("")} t={tt} />
       ) : (
         <ul className="grid auto-rows-fr gap-4 sm:grid-cols-2">
-          {links.map((link) => (
+          {visibleLinks.map((link) => (
             <li key={link.id} className="h-full">
-              <LinkCard link={link} t={tt} />
+              <LinkCard
+                link={link}
+                onOptimisticDelete={handleOptimisticDelete}
+                onDeleteFailed={handleDeleteFailed}
+                t={tt}
+              />
             </li>
           ))}
         </ul>
@@ -113,8 +161,8 @@ function EmptyState({
   t: (key: string, vars?: Record<string, string | number>) => string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-border bg-surface px-6 py-12 text-center">
-      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-elevated text-primary">
+    <div className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-border bg-bg-subtle px-6 py-14 text-center">
+      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-soft text-primary">
         <Sparkles className="h-5 w-5" />
       </span>
       <div>
@@ -137,9 +185,13 @@ function EmptyState({
 
 function LinkCard({
   link,
+  onOptimisticDelete,
+  onDeleteFailed,
   t,
 }: {
   link: WorkLinkRow;
+  onOptimisticDelete: (id: string) => void;
+  onDeleteFailed: (id: string) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
 }) {
   const router = useRouter();
@@ -191,15 +243,24 @@ function LinkCard({
     }
     void run(async () => {
       setDeletingPending(true);
+      // Optimistic hide — the row disappears the moment we kick off the
+      // server action, so the success toast lands at the same moment
+      // (not before, not after). If the action fails we put the row
+      // back and surface the error toast.
+      onOptimisticDelete(link.id);
       try {
         const result = await deleteWorkLinkAction(link.id);
         if (!result.ok) {
+          onDeleteFailed(link.id);
           toast.error(t("toast.delete_failed"));
           setConfirmDelete(false);
           return;
         }
         toast.success(t("toast.deleted"));
         router.refresh();
+      } catch (err) {
+        onDeleteFailed(link.id);
+        throw err;
       } finally {
         setDeletingPending(false);
       }
@@ -225,11 +286,11 @@ function LinkCard({
   return (
     <article
       className={cn(
-        "flex h-full flex-col rounded-2xl border bg-surface p-5 transition-colors",
+        "flex h-full flex-col rounded-xl border bg-surface p-5 shadow-sm transition-colors",
         link.status === "broken"
-          ? "border-warning/40"
+          ? "border-warning/50"
           : "border-border hover:border-primary/40",
-        !link.use_in_cover_letter && "opacity-75",
+        !link.use_in_cover_letter && "opacity-80",
       )}
     >
       <div className="flex items-start gap-3">
@@ -470,7 +531,7 @@ function AddLinkModal({
         />
         <Dialog.Content
           className={cn(
-            "fixed left-1/2 top-1/2 z-50 flex w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-2xl border border-border bg-surface p-6 shadow-2xl",
+            "fixed left-1/2 top-1/2 z-50 flex w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-lg",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
             "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
           )}
@@ -641,7 +702,7 @@ function EditLinkModal({
     >
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-2xl border border-border bg-surface p-6 shadow-2xl data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex w-[min(560px,92vw)] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-xl border border-border bg-surface p-6 shadow-lg data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95">
           <div className="flex items-start justify-between gap-3">
             <Dialog.Title className="text-h3 tracking-tight">
               {t("edit_modal.title")}
@@ -743,7 +804,9 @@ function TypeBadge({
   t: (key: string, vars?: Record<string, string | number>) => string;
 }) {
   return (
-    <span className="text-foreground">{t(`type.${type}`)}</span>
+    <span className="inline-flex items-center rounded-md border border-border bg-surface-elevated px-1.5 py-0.5 text-label font-medium text-muted-foreground">
+      {t(`type.${type}`)}
+    </span>
   );
 }
 
@@ -773,15 +836,17 @@ function Switch({
       className={cn(
         "relative inline-flex h-6 w-10 shrink-0 cursor-pointer items-center rounded-full border transition-colors",
         checked
-          ? "border-primary/60 bg-primary/30"
+          ? "border-primary bg-primary"
           : "border-border bg-surface-elevated",
         disabled && "cursor-not-allowed opacity-50",
       )}
     >
       <span
         className={cn(
-          "absolute top-0.5 inline-block h-4 w-4 rounded-full bg-foreground transition-transform",
-          checked ? "translate-x-[18px]" : "translate-x-0.5",
+          "absolute top-0.5 inline-block h-4 w-4 rounded-full shadow-sm transition-transform",
+          checked
+            ? "translate-x-[18px] bg-primary-foreground"
+            : "translate-x-0.5 bg-muted-foreground",
         )}
       />
     </button>
@@ -821,7 +886,7 @@ function ToggleRow({
 
   if (analysisPending) {
     return (
-      <div className="mt-3 flex flex-col gap-2 rounded-md border border-border bg-surface-elevated/40 px-3 py-2">
+      <div className="mt-3 flex flex-col gap-2 rounded-lg border border-border bg-surface-elevated px-3 py-2">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-small font-medium text-foreground">
@@ -882,7 +947,7 @@ function ToggleRow({
     );
   }
   return (
-    <div className="mt-3 flex items-center justify-between gap-3 rounded-md border border-border bg-surface-elevated/40 px-3 py-2">
+    <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-border bg-surface-elevated px-3 py-2">
       <div className="min-w-0">
         <div className="text-small font-medium text-foreground">
           {link.use_in_cover_letter
@@ -968,10 +1033,10 @@ function QualityBar({
             <li
               key={b.labelKey}
               className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-small",
+                "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-label",
                 b.tone === "warn"
                   ? "border-warning/40 bg-warning/10 text-warning"
-                  : "border-border bg-surface-elevated/60 text-muted-foreground",
+                  : "border-border bg-surface-elevated text-muted-foreground",
               )}
             >
               <span
@@ -999,40 +1064,43 @@ function QualityBar({
   );
 }
 
+// Clean Slate — the personal-site type gets the soft emerald accent;
+// every other type uses a neutral surface chip so dark mode stays
+// consistent (no hardcoded per-platform hues).
 const TYPE_META: Record<
   WorkLinkType,
   { iconBg: string; icon: React.ReactNode }
 > = {
   portfolio: {
-    iconBg: "bg-primary/15 text-primary",
+    iconBg: "bg-accent-soft text-primary",
     icon: <Globe className="h-4 w-4" />,
   },
   github: {
-    iconBg: "bg-emerald-500/15 text-emerald-400",
+    iconBg: "bg-surface-elevated text-muted-foreground",
     icon: <GitBranch className="h-4 w-4" />,
   },
   figma: {
-    iconBg: "bg-violet-500/15 text-violet-400",
+    iconBg: "bg-surface-elevated text-muted-foreground",
     icon: <ImageIcon className="h-4 w-4" />,
   },
   dribbble: {
-    iconBg: "bg-pink-500/15 text-pink-400",
+    iconBg: "bg-surface-elevated text-muted-foreground",
     icon: <ImageIcon className="h-4 w-4" />,
   },
   behance: {
-    iconBg: "bg-blue-500/15 text-blue-400",
+    iconBg: "bg-surface-elevated text-muted-foreground",
     icon: <ImageIcon className="h-4 w-4" />,
   },
   app_store: {
-    iconBg: "bg-cyan-500/15 text-cyan-400",
+    iconBg: "bg-surface-elevated text-muted-foreground",
     icon: <Store className="h-4 w-4" />,
   },
   article: {
-    iconBg: "bg-amber-500/15 text-amber-400",
+    iconBg: "bg-surface-elevated text-muted-foreground",
     icon: <FileText className="h-4 w-4" />,
   },
   video: {
-    iconBg: "bg-rose-500/15 text-rose-400",
+    iconBg: "bg-surface-elevated text-muted-foreground",
     icon: <Video className="h-4 w-4" />,
   },
   other: {

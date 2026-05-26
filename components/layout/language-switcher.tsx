@@ -31,17 +31,18 @@ export function LanguageSwitcher() {
           title={t("common.language.tooltip")}
           aria-label={t("common.language.label")}
           className={cn(
-            "inline-flex h-8 items-center gap-1.5 rounded-md px-2.5 text-small text-foreground",
-            "bg-surface/55 backdrop-blur-xl border border-white/[0.08]",
-            "shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.04)]",
-            "transition-[border-color,background-color,box-shadow] duration-fast ease-out-quint",
-            "hover:bg-surface-elevated/70 hover:border-white/[0.14]",
-            "data-[state=open]:bg-surface-elevated/80 data-[state=open]:border-primary/40 data-[state=open]:shadow-[inset_0_1px_0_0_hsl(0_0%_100%/0.06),0_0_0_2px_hsl(var(--primary)/0.18)]",
-            "focus-visible:outline-none focus-visible:border-primary/45",
+            "inline-flex h-9 items-center gap-1.5 rounded-lg px-2.5",
+            "bg-surface border border-border",
+            "transition-colors duration-150",
+            "hover:bg-surface-elevated",
+            "data-[state=open]:bg-surface-elevated data-[state=open]:border-primary/40",
+            "focus-visible:outline-none focus-visible:border-primary",
           )}
         >
-          <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-          <span className="font-medium">{CODE_LABEL[locale]}</span>
+          <Globe className="h-4 w-4 text-muted-foreground" />
+          <span className="text-small font-medium text-foreground">
+            {CODE_LABEL[locale]}
+          </span>
           <ChevronDown className="h-3 w-3 text-muted-foreground" />
         </button>
       </DropdownMenu.Trigger>
@@ -50,9 +51,8 @@ export function LanguageSwitcher() {
           align="end"
           sideOffset={6}
           className={cn(
-            "z-50 min-w-[180px] overflow-hidden p-1",
-            "glass-popover",
-            "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1",
+            "z-50 min-w-[180px] overflow-hidden rounded-xl border border-border bg-surface p-1 shadow-lg",
+            "data-[state=open]:animate-dropdown-in",
           )}
         >
           {SUPPORTED_LOCALES.map((option) => {
@@ -62,18 +62,19 @@ export function LanguageSwitcher() {
                 key={option}
                 onSelect={() => setLocale(option)}
                 className={cn(
-                  "relative flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2 outline-none",
-                  "transition-colors duration-fast",
-                  // Hover / focus — left-edge indigo bar + surface fill.
-                  "focus:bg-surface-elevated/70 focus:text-foreground",
-                  "focus:before:absolute focus:before:inset-y-1.5 focus:before:left-0 focus:before:w-[2px] focus:before:rounded-r-full focus:before:bg-primary",
-                  active && "bg-gradient-to-r from-primary/12 to-transparent text-foreground",
+                  "relative flex cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 outline-none text-small",
+                  "transition-colors duration-150",
+                  "focus:bg-surface-elevated focus:text-foreground",
+                  active ? "text-primary" : "text-secondary-foreground",
                 )}
               >
-                <span className="text-small">{t(LABEL_KEY[option])}</span>
-                {active && (
-                  <Check className="h-3.5 w-3.5 text-primary" />
-                )}
+                <span className="flex items-center gap-2.5">
+                  <span className="w-6 text-label uppercase tabular text-muted-foreground">
+                    {CODE_LABEL[option]}
+                  </span>
+                  <span className="font-medium">{t(LABEL_KEY[option])}</span>
+                </span>
+                {active && <Check className="h-4 w-4 text-primary" />}
               </DropdownMenu.Item>
             );
           })}

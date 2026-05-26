@@ -71,8 +71,10 @@ export function ProfileEditForm({ initial }: Props) {
   return (
     <div className="container max-w-3xl py-10">
       <div className="pb-6">
-        <h1 className="text-h1 tracking-tight">Profile</h1>
-        <p className="text-small text-muted-foreground">
+        <h1 className="text-h1 font-semibold tracking-tight text-foreground">
+          Profile
+        </h1>
+        <p className="pt-1 text-small text-muted-foreground">
           Used by every AI feature in SoloOS. Update anytime.
         </p>
       </div>

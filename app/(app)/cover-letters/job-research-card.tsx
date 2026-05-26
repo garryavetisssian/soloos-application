@@ -84,7 +84,7 @@ function Empty({
   t: (key: string, vars?: Record<string, string | number>) => string;
 }) {
   return (
-    <div className="flex shrink-0 items-center justify-center rounded-md border border-dashed border-border bg-surface-elevated/40 px-6 py-8 text-center">
+    <div className="flex shrink-0 items-center justify-center rounded-lg border border-dashed border-border bg-surface-elevated px-6 py-8 text-center">
       <div className="flex flex-col items-center gap-2">
         <Globe className="h-5 w-5 text-muted-foreground" />
         <div className="text-small text-foreground">
@@ -106,7 +106,7 @@ function Analyzing({
   t: (key: string, vars?: Record<string, string | number>) => string;
 }) {
   return (
-    <div className="flex shrink-0 flex-col gap-3 rounded-md border border-border bg-surface-elevated p-5">
+    <div className="flex shrink-0 flex-col gap-3 rounded-lg border border-border bg-surface-elevated p-5">
       <div className="flex items-center gap-3">
         <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/15 text-primary">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -141,7 +141,7 @@ function Failed({
   return (
     <div
       role="alert"
-      className="flex shrink-0 flex-col gap-3 rounded-md border border-warning/30 bg-warning/5 p-5"
+      className="flex shrink-0 flex-col gap-3 rounded-lg border border-warning/30 bg-warning/5 p-5"
     >
       <div className="flex items-start gap-3">
         <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-warning/15 text-warning">
@@ -202,14 +202,14 @@ function Ready({
         <Dialog.Portal>
           <Dialog.Overlay
             className={cn(
-              "fixed inset-0 z-50 bg-black/60 backdrop-blur-sm",
+              "fixed inset-0 z-50 bg-foreground/20 backdrop-blur-sm",
               "data-[state=open]:animate-in data-[state=open]:fade-in-0",
               "data-[state=closed]:animate-out data-[state=closed]:fade-out-0",
             )}
           />
           <Dialog.Content
             className={cn(
-              "fixed left-1/2 top-1/2 z-50 flex w-[min(960px,92vw)] max-h-[88vh] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl",
+              "fixed left-1/2 top-1/2 z-50 flex w-[min(960px,92vw)] max-h-[88vh] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-lg",
               "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
               "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
             )}
@@ -217,7 +217,7 @@ function Ready({
           >
             <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border bg-surface-elevated px-6 py-4">
               <div className="min-w-0 flex-1">
-                <Dialog.Title className="truncate text-h3 tracking-tight">
+                <Dialog.Title className="truncate text-h3 font-semibold tracking-[-0.01em] text-foreground">
                   {heading || t("research.analyzed_fallback")}
                 </Dialog.Title>
                 {research.job_summary && (
@@ -300,7 +300,7 @@ function ReadySummary({
       onClick={onExpand}
       title={tooltip}
       className={cn(
-        "group flex shrink-0 items-center gap-3 rounded-md border bg-surface-elevated px-4 py-3 text-left transition-colors",
+        "group flex shrink-0 items-center gap-3 rounded-lg border bg-surface-elevated px-4 py-3 text-left transition-colors",
         state === "normalizing" && "border-primary/30",
         state === "error" && "border-warning/40",
         state === "ready" && "border-border hover:border-primary/40",
@@ -358,6 +358,17 @@ function ReadyBody({
   const [showRaw, setShowRaw] = useState(true);
   const [showOriginal, setShowOriginal] = useState(true);
   const wasTranslated = research.source_language !== research.output_language;
+  // A "thin preview" is when the extractor returned little more than a
+  // title + chips — none of the body fields the cover letter actually
+  // leans on. Most common on hh.ru / LinkedIn URLs where the public
+  // thumbnail is all we can see. We surface a soft hint so the user
+  // knows to paste the description manually for a richer letter.
+  const isThinPreview =
+    !research.job_summary?.trim() &&
+    !research.responsibilities?.trim() &&
+    !research.requirements?.trim() &&
+    !research.company_context?.trim() &&
+    !research.product_context?.trim();
   return (
     <div className="flex flex-col gap-4">
       <LanguageMetaRow
@@ -375,6 +386,9 @@ function ReadyBody({
           onDismiss={onDismissNormalizeError}
         />
       )}
+      {isThinPreview && !normalizing && (
+        <ThinPreviewBanner t={t} />
+      )}
 
       {research.useful_signals.length > 0 && (
         <ul className="flex flex-wrap gap-1.5">
@@ -390,7 +404,7 @@ function ReadyBody({
       )}
 
       <details
-        className="group rounded-md border border-border bg-background p-4"
+        className="group rounded-lg border border-border bg-surface p-4"
         open={showRaw}
         onToggle={(e) => setShowRaw((e.target as HTMLDetailsElement).open)}
       >
@@ -434,7 +448,7 @@ function ReadyBody({
 
       {wasTranslated && research.raw_excerpt && (
         <details
-          className="rounded-md border border-border bg-background p-4"
+          className="rounded-lg border border-border bg-surface p-4"
           open={showOriginal}
           onToggle={(e) =>
             setShowOriginal((e.target as HTMLDetailsElement).open)
@@ -518,6 +532,29 @@ function NormalizingBanner({
         </div>
         <p className="text-small text-muted-foreground">
           {t("research.translating_body")}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ThinPreviewBanner({
+  t,
+}: {
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  return (
+    <div
+      role="status"
+      className="flex items-start gap-3 rounded-md border border-warning/30 bg-warning/5 p-3"
+    >
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+      <div className="min-w-0 flex-1">
+        <div className="text-small font-medium text-foreground">
+          {t("research.thin_preview_title")}
+        </div>
+        <p className="text-small text-muted-foreground">
+          {t("research.thin_preview_body")}
         </p>
       </div>
     </div>

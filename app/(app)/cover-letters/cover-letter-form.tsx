@@ -942,7 +942,7 @@ function ModeSelector({
     <div
       role="tablist"
       aria-label={t("cover_letter.left_card.title")}
-      className="flex shrink-0 gap-2 rounded-lg border border-border bg-surface-elevated/40 p-1"
+      className="flex shrink-0 gap-1 rounded-lg border border-border bg-surface-elevated p-1"
     >
       <ModeTab
         active={value === "url"}
@@ -991,8 +991,8 @@ function ModeTab({
       className={cn(
         "flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-small font-medium transition-colors",
         active
-          ? "bg-surface text-foreground shadow-sm ring-1 ring-border"
-          : "text-secondary-foreground hover:text-foreground",
+          ? "bg-accent-soft text-primary"
+          : "text-muted-foreground hover:text-foreground",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >
@@ -1001,12 +1001,11 @@ function ModeTab({
       {recommended && (
         <span
           className={cn(
-            "ml-1 rounded-full border px-1.5 py-0.5 text-small",
+            "ml-1 rounded-full px-1.5 py-0.5 text-label leading-none",
             active
-              ? "border-primary/40 bg-primary/15 text-primary"
-              : "border-border bg-surface-elevated text-muted-foreground",
+              ? "bg-primary/15 text-primary"
+              : "bg-surface text-muted-foreground",
           )}
-          style={{ fontSize: "11px", lineHeight: 1 }}
         >
           {recommendedLabel ?? "AI recommended"}
         </span>
@@ -1211,7 +1210,7 @@ function Card({ children }: { children: React.ReactNode }) {
   // scrolls naturally. The min-height keeps the right card's textarea
   // comfortably tall on first paint.
   return (
-    <section className="flex min-h-[640px] flex-col rounded-[20px] border border-border bg-surface p-6">
+    <section className="flex min-h-[640px] flex-col rounded-xl border border-border bg-surface p-6 shadow-sm">
       {children}
     </section>
   );
@@ -1230,11 +1229,15 @@ function CardHeader({
     <header className="shrink-0 pb-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-h3 tracking-tight">{title}</h2>
+          <h2 className="text-h3 font-semibold tracking-[-0.01em] text-foreground">
+            {title}
+          </h2>
           <p className="pt-1 text-small text-muted-foreground">{subtitle}</p>
         </div>
         {actions ? <div className="shrink-0">{actions}</div> : null}
       </div>
+      {/* Hairline under the header to separate it from the body. */}
+      <div className="mt-3 h-px bg-border" />
     </header>
   );
 }
@@ -1359,7 +1362,7 @@ function TranslateMenu({
           align="end"
           sideOffset={6}
           className={cn(
-            "z-50 min-w-[180px] overflow-hidden rounded-lg border border-border bg-surface-elevated p-1 shadow-lg shadow-black/30",
+            "z-50 min-w-[180px] overflow-hidden rounded-lg border border-border bg-surface p-1 shadow-md",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1",
           )}
         >
@@ -1373,7 +1376,7 @@ function TranslateMenu({
                 disabled={isCurrent || translating != null}
                 className={cn(
                   "flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2 text-small outline-none transition-colors",
-                  "focus:bg-surface focus:text-foreground",
+                  "focus:bg-surface-elevated focus:text-foreground",
                   "data-[disabled]:pointer-events-none data-[disabled]:opacity-60",
                 )}
               >
@@ -1524,8 +1527,8 @@ function EmptyState({
   t: (key: string, vars?: Record<string, string | number>) => string;
 }) {
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-md border border-dashed border-border bg-surface-elevated/40 px-6 text-center">
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-elevated text-muted-foreground">
+    <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border bg-surface-elevated px-6 text-center">
+      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent-soft text-primary">
         <FileText className="h-5 w-5" />
       </span>
       <div>
@@ -1642,9 +1645,9 @@ function SetupPanel({
     sourceLanguage != null && outputLanguage === sourceLanguage;
 
   return (
-    <div className="rounded-xl border border-border bg-surface-elevated/40">
+    <div className="rounded-xl border border-border bg-surface-elevated">
       {sourceLanguage && (
-        <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-2.5 text-small text-muted-foreground">
+        <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-2.5 text-small text-muted-foreground">
           <span className="inline-flex items-center gap-1.5">
             <Languages className="h-3.5 w-3.5" />
             <span>{t("language.source")}</span>
@@ -1661,7 +1664,7 @@ function SetupPanel({
           <div
             role="radiogroup"
             aria-label={t("channel.label")}
-            className="inline-flex gap-1 rounded-lg border border-border bg-surface-elevated/40 p-0.5"
+            className="inline-flex gap-1 rounded-lg border border-border bg-surface p-1"
           >
             <ChannelPill
               active={channel === "platform"}
@@ -1782,8 +1785,8 @@ function ChannelPill({
       className={cn(
         "rounded-md px-2.5 py-1 text-small font-medium transition-colors",
         active
-          ? "bg-surface text-foreground shadow-sm ring-1 ring-border"
-          : "text-secondary-foreground hover:text-foreground",
+          ? "bg-accent-soft text-primary"
+          : "text-muted-foreground hover:text-foreground",
         disabled && "cursor-not-allowed opacity-60",
       )}
     >
@@ -1812,7 +1815,7 @@ function SmartSuggestion({
   disabled?: boolean;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-small">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-accent-soft p-3 text-small">
       <div className="min-w-0 flex-1">
         <div className="text-foreground">
           {t("smart_suggestion.intro", { detected: sourceLabel })}
@@ -1826,8 +1829,8 @@ function SmartSuggestion({
         onClick={onAccept}
         disabled={disabled}
         className={cn(
-          "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-primary/40 bg-primary/15 px-3 text-small font-medium text-primary transition-colors",
-          "hover:border-primary/60 hover:bg-primary/25",
+          "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-primary px-3 text-small font-medium text-primary-foreground shadow-sm transition-colors",
+          "hover:bg-primary/90",
           "disabled:cursor-not-allowed disabled:opacity-50",
         )}
       >

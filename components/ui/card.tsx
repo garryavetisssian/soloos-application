@@ -1,16 +1,24 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+// Clean Slate card — surface bg, hairline border, soft shadow, 12px
+// radius. The old `data-tab` ink-rule is ignored (suppressed in CSS);
+// the prop is still accepted so existing callers don't error.
 const Card = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("glass-card text-foreground", className)}
-    {...props}
-  />
-));
+  React.HTMLAttributes<HTMLDivElement> & { "data-tab"?: string }
+>(({ className, ...props }, ref) => {
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "rounded-xl border border-border bg-surface text-foreground shadow-sm",
+        className,
+      )}
+      {...props}
+    />
+  );
+});
 Card.displayName = "Card";
 
 const CardHeader = React.forwardRef<
@@ -31,7 +39,10 @@ const CardTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("text-h3 font-semibold leading-none tracking-tight", className)}
+    className={cn(
+      "text-h3 font-semibold leading-tight tracking-[-0.01em] text-foreground",
+      className,
+    )}
     {...props}
   />
 ));

@@ -3,92 +3,113 @@
 @tailwind utilities;
 
 /* ============================================================
-   SoloOS — Modern dark palette
+   SoloOS — "Clean Slate" design system
    ------------------------------------------------------------
-   Cool, neutral, high-contrast. Single vivid indigo accent.
-   Standard modern SaaS vocabulary, executed cleanly.
+   Stripe-style clean SaaS: light-first with a dark mode, emerald
+   accent, Geist sans throughout, soft shadows, rounded cards,
+   calm subtle motion. No serif, no magazine, no glass/grain.
+
+   Legacy class names from the old "Editorial Operator" system
+   (.editorial-card, .eyebrow, .font-display, [data-folio], the
+   glass-* helpers) are redefined below to Clean Slate equivalents
+   so the many pages that still reference them render correctly
+   without per-file rewrites.
    ============================================================ */
 @layer base {
   :root {
-    --background: 240 14% 6%;
-    --foreground: 240 6% 96%;
+    /* ---- Surfaces (light) -------------------------------- */
+    --background: 0 0% 100%;
+    --bg-subtle: 160 20% 98%;
+    --foreground: 165 24% 8%;
+    --ink: 165 24% 8%;
+    --paper: 0 0% 100%;
 
-    --surface: 240 11% 9%;
-    --surface-elevated: 240 11% 12%;
+    --surface: 0 0% 100%;
+    --surface-elevated: 160 12% 97%;
 
-    --muted: 240 11% 9%;
-    --muted-foreground: 240 5% 58%;
+    --muted: 160 14% 96%;
+    --muted-foreground: 168 8% 40%;
 
-    --secondary: 240 11% 12%;
-    --secondary-foreground: 240 6% 78%;
+    --secondary: 160 12% 96%;
+    --secondary-foreground: 165 14% 24%;
 
-    --border: 240 6% 16%;
-    --input: 240 6% 16%;
+    --border: 165 10% 91%;
+    --rule: 165 10% 92%;
+    --input: 165 10% 88%;
 
-    /* Vivid indigo — modern SaaS accent, punchier than #6366F1. */
-    --primary: 252 85% 68%;
+    /* ---- Accent — emerald -------------------------------- */
+    --primary: 160 84% 33%;
     --primary-foreground: 0 0% 100%;
-    --ring: 252 85% 68%;
-    --accent: 252 85% 68%;
+    --ring: 160 84% 39%;
+    --accent: 160 84% 33%;
     --accent-foreground: 0 0% 100%;
+    --accent-soft: 152 70% 95%;
 
-    --success: 158 64% 52%;
-    --warning: 38 92% 50%;
-    --destructive: 0 75% 60%;
+    /* `cinnabar` is remapped to teal so the few gradients that
+       blend primary→cinnabar read as an on-brand emerald→teal. */
+    --cinnabar: 174 72% 34%;
+    --cinnabar-foreground: 0 0% 100%;
+
+    --success: 142 71% 38%;
+    --warning: 32 90% 42%;
+    --destructive: 0 72% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --radius: 10px;
+    --radius: 12px;
 
-    /* Cool spectral trio for mesh + accent glows: indigo, cyan, violet. */
-    --accent-indigo: 252 85% 68%;
-    --accent-cyan: 190 91% 62%;
-    --accent-violet: 280 80% 70%;
+    color-scheme: light;
+  }
+
+  .dark {
+    --background: 160 16% 5%;
+    --bg-subtle: 160 14% 6%;
+    --foreground: 160 14% 95%;
+    --ink: 160 14% 95%;
+    --paper: 160 16% 5%;
+
+    --surface: 162 14% 8%;
+    --surface-elevated: 162 13% 12%;
+
+    --muted: 162 13% 12%;
+    --muted-foreground: 162 8% 64%;
+
+    --secondary: 162 13% 13%;
+    --secondary-foreground: 160 10% 86%;
+
+    --border: 162 12% 16%;
+    --rule: 162 12% 17%;
+    --input: 162 12% 19%;
+
+    --primary: 160 70% 48%;
+    --primary-foreground: 162 40% 6%;
+    --ring: 160 70% 48%;
+    --accent: 160 70% 48%;
+    --accent-foreground: 162 40% 6%;
+    --accent-soft: 162 44% 11%;
+
+    --cinnabar: 174 64% 46%;
+    --cinnabar-foreground: 162 40% 6%;
+
+    --success: 142 60% 48%;
+    --warning: 38 90% 56%;
+    --destructive: 0 70% 58%;
+    --destructive-foreground: 0 0% 100%;
 
     color-scheme: dark;
   }
 
   html {
     @apply bg-background text-foreground antialiased;
-    font-feature-settings: "ss01", "cv11", "cv02";
+    font-variant-numeric: tabular-nums lining-nums;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Smooth scroll on in-page anchor links (e.g. landing nav → #features).
-       Browsers automatically respect prefers-reduced-motion when `smooth`
-       is set, so users who opt out of motion still get an instant jump. */
     scroll-behavior: smooth;
-    /* When jumping to an anchor, leave room for the sticky-feeling nav at
-       the top so the section heading isn't tucked against the viewport edge. */
     scroll-padding-top: 5rem;
   }
 
-  /* Body bg transparent so body::before mesh is visible. */
   body {
-    background-color: transparent;
-  }
-
-  /* Static spectral gradient mesh — cool trio. Fixed, zero JS, ~0 perf. */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -10;
-    pointer-events: none;
-    background:
-      radial-gradient(
-        ellipse 65% 50% at 10% -5%,
-        hsl(var(--accent-indigo) / 0.18),
-        transparent 60%
-      ),
-      radial-gradient(
-        ellipse 55% 45% at 92% 0%,
-        hsl(var(--accent-cyan) / 0.10),
-        transparent 60%
-      ),
-      radial-gradient(
-        ellipse 75% 60% at 88% 100%,
-        hsl(var(--accent-violet) / 0.12),
-        transparent 60%
-      );
+    /* Faint emerald-tinted page wash, full-bleed, behind content. */
+    background-color: hsl(var(--bg-subtle));
   }
 
   *,
@@ -98,111 +119,182 @@
   }
 
   :focus-visible {
-    outline: 2px solid hsl(var(--ring) / 0.5);
+    outline: 2px solid hsl(var(--ring) / 0.55);
     outline-offset: 2px;
+  }
+
+  ::selection {
+    background: hsl(var(--accent) / 0.18);
+    color: hsl(var(--foreground));
   }
 }
 
 /* ============================================================
-   Utility classes — glass surfaces, gradients, motion
+   Clean Slate primitives
+   (legacy class names retained, restyled clean)
    ============================================================ */
 @layer components {
-  /* ----- Surfaces ----- */
+  /* ---- Typography helpers ----
+     "display" is now just Geist at a heavier weight — no serif,
+     no optical-size tricks. The three legacy display helpers all
+     collapse to clean sans so old markup keeps working. */
+  .font-display,
+  .font-display-body {
+    font-family: theme("fontFamily.sans");
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .font-display-italic {
+    font-family: theme("fontFamily.sans");
+    font-weight: 500;
+    font-style: normal;
+  }
 
+  /* ---- Surfaces ----
+     One clean card. Soft border + soft shadow + 12px radius.
+     The old ink-rule (::before) is suppressed. */
+  .editorial-card {
+    position: relative;
+    background: hsl(var(--surface));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow:
+      0 1px 2px -1px hsl(165 24% 8% / 0.06),
+      0 4px 16px -8px hsl(165 24% 8% / 0.08);
+  }
+  .dark .editorial-card {
+    box-shadow:
+      0 1px 2px -1px hsl(0 0% 0% / 0.4),
+      0 8px 24px -12px hsl(0 0% 0% / 0.5);
+  }
+  .editorial-card::before,
+  .editorial-card[data-tab]::before {
+    display: none !important;
+    content: none;
+  }
+
+  /* Glass helpers → clean opaque surfaces. */
   .glass-card {
-    position: relative;
-    background: hsl(var(--surface) / 0.6);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    background: hsl(var(--surface));
+    border: 1px solid hsl(var(--border));
     border-radius: var(--radius);
-    box-shadow: theme("boxShadow.glass-rest");
-    border: 1px solid transparent;
+    box-shadow:
+      0 1px 2px -1px hsl(165 24% 8% / 0.06),
+      0 4px 16px -8px hsl(165 24% 8% / 0.08);
   }
-  .glass-card::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(
-      180deg,
-      hsl(0 0% 100% / 0.10) 0%,
-      hsl(0 0% 100% / 0.02) 50%,
-      hsl(0 0% 100% / 0.04) 100%
-    );
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-    z-index: 1;
-  }
-
   .glass-popover {
-    position: relative;
-    background: hsl(var(--surface-elevated) / 0.85);
-    backdrop-filter: blur(28px) saturate(180%);
-    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    background: hsl(var(--surface));
+    border: 1px solid hsl(var(--border));
     border-radius: var(--radius);
-    box-shadow: theme("boxShadow.glass-hover");
-    border: 1px solid transparent;
+    box-shadow:
+      0 8px 24px -8px hsl(165 24% 8% / 0.14),
+      0 2px 6px -2px hsl(165 24% 8% / 0.08);
   }
-  .glass-popover::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(
-      180deg,
-      hsl(0 0% 100% / 0.14),
-      hsl(0 0% 100% / 0.04)
-    );
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-    z-index: 1;
+  .dark .glass-popover {
+    box-shadow:
+      0 12px 32px -8px hsl(0 0% 0% / 0.6),
+      0 2px 8px -2px hsl(0 0% 0% / 0.4);
   }
-
   .glass-chrome {
-    background: hsl(var(--surface) / 0.7);
-    backdrop-filter: blur(24px) saturate(170%);
-    -webkit-backdrop-filter: blur(24px) saturate(170%);
+    background: hsl(var(--background) / 0.85);
+    backdrop-filter: saturate(180%) blur(12px);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
   }
 
-  /* ----- Motion ----- */
+  /* ---- Eyebrow / labels ----
+     Small uppercase label. No longer mono; clean tracked sans. */
+  .eyebrow {
+    @apply uppercase text-muted-foreground;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    letter-spacing: 0.08em;
+  }
 
+  /* Folio badges are gone — suppress the generated page numbers. */
+  [data-folio]::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  /* ---- Rules / dividers ---- */
+  .rule-double {
+    border: 0;
+    height: 1px;
+    background: hsl(var(--border));
+  }
+  .rule-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .rule-eyebrow::before,
+  .rule-eyebrow::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: hsl(var(--border));
+  }
+  .col-rule {
+    border-left: 1px solid hsl(var(--border));
+    padding-left: 1.25rem;
+  }
+
+  /* Drop cap removed — first letter renders normally. */
+  .drop-cap::first-letter {
+    font: inherit;
+    float: none;
+    color: inherit;
+    font-size: inherit;
+    padding: 0;
+  }
+
+  .prose-letter {
+    font-family: theme("fontFamily.sans");
+    font-size: 15px;
+    line-height: 1.65;
+    color: hsl(var(--foreground));
+  }
+
+  /* ---- Motion ---- */
   .lift-on-hover {
     transition:
       transform 150ms cubic-bezier(0.22, 1, 0.36, 1),
       box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
       background-color 150ms cubic-bezier(0.22, 1, 0.36, 1);
   }
   .lift-on-hover:hover {
-    transform: translateY(-1px);
-    box-shadow: theme("boxShadow.glass-hover");
+    transform: translateY(-2px);
+    border-color: hsl(var(--border));
+    box-shadow:
+      0 4px 12px -4px hsl(165 24% 8% / 0.1),
+      0 12px 32px -12px hsl(165 24% 8% / 0.12);
+  }
+  .dark .lift-on-hover:hover {
+    box-shadow:
+      0 8px 28px -8px hsl(0 0% 0% / 0.6);
   }
 
   @keyframes reveal-up {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
   }
   .reveal > * {
-    animation: reveal-up 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: reveal-up 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   .reveal > *:nth-child(1) { animation-delay: 0ms; }
-  .reveal > *:nth-child(2) { animation-delay: 70ms; }
-  .reveal > *:nth-child(3) { animation-delay: 140ms; }
-  .reveal > *:nth-child(4) { animation-delay: 210ms; }
-  .reveal > *:nth-child(5) { animation-delay: 280ms; }
-  .reveal > *:nth-child(6) { animation-delay: 350ms; }
+  .reveal > *:nth-child(2) { animation-delay: 50ms; }
+  .reveal > *:nth-child(3) { animation-delay: 100ms; }
+  .reveal > *:nth-child(4) { animation-delay: 150ms; }
+  .reveal > *:nth-child(5) { animation-delay: 200ms; }
+  .reveal > *:nth-child(6) { animation-delay: 250ms; }
 
-  /* ----- Accent glow (e.g., dashboard stat tiles) ----- */
+  .ink-bloom {
+    animation: reveal-up 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 
+  /* Accent glow → soft emerald wash, very subtle. */
   .accent-glow {
     position: relative;
     overflow: hidden;
@@ -213,9 +305,9 @@
     inset: 0;
     border-radius: inherit;
     background: radial-gradient(
-      ellipse 80% 60% at 95% -10%,
-      hsl(var(--glow-hsl, var(--primary)) / 0.22),
-      transparent 55%
+      ellipse 90% 70% at 100% 0%,
+      hsl(var(--accent) / 0.06),
+      transparent 60%
     );
     pointer-events: none;
     z-index: 0;
@@ -225,42 +317,20 @@
     z-index: 1;
   }
 
-  /* ----- Mono eyebrow label ----- */
-
-  .eyebrow {
-    @apply font-mono uppercase text-muted-foreground;
-    font-size: 11px;
-    line-height: 1.4;
-    letter-spacing: 0.12em;
-  }
-
-  /* ----- Scroll-driven reveal (CSS-only) ----- */
-
-  /* Sections marked .scroll-reveal fade + translate up as they enter
-     the viewport. Uses the modern scroll-driven animation API. In
-     browsers that don't support animation-timeline (older Safari /
-     Firefox without the flag) the @supports gate keeps the element
-     fully visible — no JS, no observer, no flicker. */
+  /* Scroll-driven reveal kept (gentler). */
   @keyframes scroll-fade-up {
-    from {
-      opacity: 0;
-      transform: translateY(28px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   @supports (animation-timeline: view()) {
     .scroll-reveal {
       animation: scroll-fade-up linear both;
       animation-timeline: view();
-      animation-range: entry 0% entry 50%;
+      animation-range: entry 0% entry 45%;
     }
   }
 
-  /* ----- Marquee for the persona strip ----- */
-
+  /* Marquee (landing persona strip) kept. */
   @keyframes marquee {
     from { transform: translateX(0); }
     to { transform: translateX(-50%); }
@@ -271,19 +341,11 @@
     animation: marquee 32s linear infinite;
   }
   .marquee-mask {
-    -webkit-mask-image: linear-gradient(
-      90deg,
-      transparent,
-      black 8%,
-      black 92%,
-      transparent
-    );
-    mask-image: linear-gradient(
-      90deg,
-      transparent,
-      black 8%,
-      black 92%,
-      transparent
-    );
+    -webkit-mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums lining-nums;
   }
 }

@@ -16,6 +16,7 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
+import { useT } from "@/lib/i18n/hooks";
 import { cn } from "@/lib/utils";
 
 // Compact ⌘K command palette — Radix Dialog under the hood for focus
@@ -30,76 +31,97 @@ type Item = {
   /** Where to navigate. Use "signout" for the logout shortcut. */
   action: { kind: "navigate"; href: string } | { kind: "signout" };
   keywords?: string[];
+  folio?: string;
 };
 
-const ITEMS: Item[] = [
+// Static spec: icons, actions, and translation keys. We don't materialize
+// labels here — useT() resolves them at render time so the palette reacts
+// to language changes without re-mounting.
+type ItemSpec = {
+  id: string;
+  i18nKey: string;
+  icon: React.ReactNode;
+  action: Item["action"];
+  // English keywords are kept as a search hint. The label itself becomes
+  // part of the haystack at render time so users can also search by the
+  // visible localized label.
+  keywords?: string[];
+};
+
+type ItemSpec2 = ItemSpec & { folio?: string };
+
+const ITEM_SPECS: ItemSpec2[] = [
   {
     id: "nav-dashboard",
-    label: "Dashboard",
+    i18nKey: "nav.palette.items.dashboard",
     icon: <LayoutDashboard className="h-4 w-4" />,
     action: { kind: "navigate", href: "/dashboard" },
-    keywords: ["home", "stats", "overview"],
+    keywords: ["home", "stats", "overview", "dashboard"],
+    folio: "01",
   },
   {
     id: "cl-new",
-    label: "New cover letter",
-    hint: "Generate from a job link or description",
+    i18nKey: "nav.palette.items.new_cover_letter",
     icon: <Sparkles className="h-4 w-4" />,
     action: { kind: "navigate", href: "/cover-letters/new" },
-    keywords: ["generate", "ai", "letter", "compose"],
+    keywords: ["generate", "ai", "letter", "compose", "new"],
+    folio: "+",
   },
   {
     id: "nav-cover-letters",
-    label: "Cover letters",
+    i18nKey: "nav.palette.items.cover_letters",
     icon: <Mail className="h-4 w-4" />,
     action: { kind: "navigate", href: "/cover-letters" },
     keywords: ["library", "saved", "letters"],
+    folio: "03",
   },
   {
     id: "nav-links",
-    label: "Links",
-    hint: "GitHub, Figma, articles, app store",
+    i18nKey: "nav.palette.items.links",
     icon: <Link2 className="h-4 w-4" />,
     action: { kind: "navigate", href: "/portfolio" },
     keywords: ["portfolio", "work links", "github", "figma"],
+    folio: "04",
   },
   {
     id: "nav-cvs",
-    label: "CVs",
+    i18nKey: "nav.palette.items.cvs",
     icon: <FileText className="h-4 w-4" />,
     action: { kind: "navigate", href: "/cvs" },
-    keywords: ["resume", "cv builder"],
+    keywords: ["resume", "cv builder", "cv"],
+    folio: "02",
   },
   {
     id: "nav-jobs",
-    label: "Job tracker",
-    hint: "Kanban — Saved → Applied → Interview → Offer",
+    i18nKey: "nav.palette.items.jobs",
     icon: <Kanban className="h-4 w-4" />,
     action: { kind: "navigate", href: "/jobs" },
     keywords: ["applications", "kanban", "pipeline"],
+    folio: "05",
   },
   {
     id: "nav-profile",
-    label: "Profile",
-    hint: "Identity, skills, target role, preferences",
+    i18nKey: "nav.palette.items.profile",
     icon: <User className="h-4 w-4" />,
     action: { kind: "navigate", href: "/settings/profile" },
     keywords: ["settings", "preferences", "account", "edit"],
+    folio: "P",
   },
   {
     id: "action-new-job",
-    label: "Add a job",
-    hint: "Manually log an application",
+    i18nKey: "nav.palette.items.add_job",
     icon: <Plus className="h-4 w-4" />,
     action: { kind: "navigate", href: "/jobs" },
     keywords: ["track", "application", "save"],
+    folio: "+",
   },
   {
     id: "action-signout",
-    label: "Log out",
+    i18nKey: "nav.palette.items.signout",
     icon: <LogOut className="h-4 w-4" />,
     action: { kind: "signout" },
     keywords: ["sign out", "logout", "exit"],
+    folio: "→",
   },
 ];
 
@@ -110,6 +132,7 @@ interface Props {
 
 export function CommandPalette({ open, onOpenChange }: Props) {
   const router = useRouter();
+  const t = useT();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -121,10 +144,33 @@ export function CommandPalette({ open, onOpenChange }: Props) {
     }
   }, [open]);
 
+  // Resolve each spec's i18n keys into a concrete Item with localized
+  // label + hint. The label is included in the searchable haystack so
+  // typing the visible (localized) word also matches.
+  const items = useMemo<Item[]>(
+    () =>
+      ITEM_SPECS.map((spec) => {
+        const label = t(`${spec.i18nKey}.label`);
+        const hintKey = `${spec.i18nKey}.hint`;
+        const hintResolved = t(hintKey);
+        const hint = hintResolved === hintKey ? undefined : hintResolved;
+        return {
+          id: spec.id,
+          label,
+          hint,
+          icon: spec.icon,
+          action: spec.action,
+          keywords: spec.keywords,
+          folio: spec.folio,
+        };
+      }),
+    [t],
+  );
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return ITEMS;
-    return ITEMS.filter((item) => {
+    if (!q) return items;
+    return items.filter((item) => {
       const haystack = [
         item.label,
         item.hint ?? "",
@@ -134,7 +180,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
         .toLowerCase();
       return haystack.includes(q);
     });
-  }, [query]);
+  }, [items, query]);
 
   // Clamp selection when filter shrinks.
   useEffect(() => {
@@ -177,39 +223,41 @@ export function CommandPalette({ open, onOpenChange }: Props) {
       <Dialog.Portal>
         <Dialog.Overlay
           className={cn(
-            "fixed inset-0 z-50 bg-background/70 backdrop-blur-sm",
+            "fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm",
             "data-[state=open]:animate-fade-in",
           )}
         />
         <Dialog.Content
           className={cn(
             "fixed left-1/2 top-[18%] z-50 w-[min(640px,calc(100vw-2rem))] -translate-x-1/2",
-            "glass-popover overflow-hidden",
+            "overflow-hidden rounded-xl border border-border bg-surface shadow-lg",
             "data-[state=open]:animate-dropdown-in",
           )}
         >
-          <Dialog.Title className="sr-only">Command palette</Dialog.Title>
+          <Dialog.Title className="sr-only">
+            {t("nav.palette.title")}
+          </Dialog.Title>
           <Dialog.Description className="sr-only">
-            Search the app or run an action.
+            {t("nav.palette.description")}
           </Dialog.Description>
-          <div className="flex items-center gap-3 border-b border-white/[0.06] px-4 py-3">
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="flex items-center gap-3 border-b border-border px-4 py-3.5">
+            <Search className="h-[18px] w-[18px] shrink-0 text-muted-foreground" />
             <input
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Search or jump to…"
+              placeholder={t("nav.palette.search_placeholder")}
               className={cn(
                 "flex-1 bg-transparent text-body text-foreground outline-none",
-                "placeholder:text-muted-foreground",
+                "placeholder:text-muted-foreground/70",
               )}
             />
             <kbd
               className={cn(
-                "hidden items-center gap-0.5 rounded-md px-1.5 py-0.5",
-                "border border-white/[0.08] bg-white/[0.04]",
-                "font-mono text-[10px] uppercase tracking-wider text-muted-foreground sm:inline-flex",
+                "hidden items-center gap-0.5 rounded px-1.5 py-0.5",
+                "border border-border bg-surface-elevated",
+                "text-[11px] font-medium text-muted-foreground sm:inline-flex",
               )}
             >
               Esc
@@ -218,7 +266,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
           <div className="max-h-[60vh] overflow-y-auto p-1.5">
             {filtered.length === 0 ? (
               <div className="px-4 py-8 text-center text-small text-muted-foreground">
-                No matches for &ldquo;{query}&rdquo;.
+                {t("nav.palette.no_matches", { query })}
               </div>
             ) : (
               <ul role="listbox">
@@ -233,31 +281,25 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                         onMouseEnter={() => setSelectedIndex(i)}
                         onClick={() => runItem(item)}
                         className={cn(
-                          "group relative flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left",
-                          "transition-colors duration-fast",
+                          "group relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left",
+                          "transition-colors duration-150",
                           selected
-                            ? "bg-surface-elevated/85 text-foreground"
-                            : "text-secondary-foreground hover:bg-surface-elevated/60 hover:text-foreground",
+                            ? "bg-accent-soft text-foreground"
+                            : "text-secondary-foreground hover:bg-surface-elevated hover:text-foreground",
                         )}
                       >
-                        {selected && (
-                          <span
-                            aria-hidden
-                            className="absolute inset-y-1.5 left-0 w-[2px] rounded-r-full bg-primary shadow-[0_0_8px_0_hsl(var(--primary)/0.6)]"
-                          />
-                        )}
                         <span
                           className={cn(
-                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
+                            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
                             selected
-                              ? "bg-primary/15 text-primary"
-                              : "bg-white/[0.04] text-muted-foreground group-hover:text-foreground",
+                              ? "border-primary/30 bg-primary/10 text-primary"
+                              : "border-border bg-surface-elevated text-muted-foreground group-hover:text-foreground",
                           )}
                         >
                           {item.icon}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-small font-medium">
+                          <div className="truncate text-small font-medium leading-tight">
                             {item.label}
                           </div>
                           {item.hint && (
@@ -268,7 +310,7 @@ export function CommandPalette({ open, onOpenChange }: Props) {
                         </div>
                         <ArrowRight
                           className={cn(
-                            "h-3.5 w-3.5 transition-opacity duration-fast",
+                            "h-4 w-4 transition-opacity duration-150",
                             selected
                               ? "opacity-100 text-primary"
                               : "opacity-0 group-hover:opacity-50",
@@ -281,27 +323,21 @@ export function CommandPalette({ open, onOpenChange }: Props) {
               </ul>
             )}
           </div>
-          <div
-            className={cn(
-              "flex items-center justify-between border-t border-white/[0.06] px-4 py-2",
-              "bg-white/[0.02]",
-            )}
-          >
-            <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-              {filtered.length} {filtered.length === 1 ? "result" : "results"}
+          <div className="flex items-center justify-between border-t border-border bg-bg-subtle px-4 py-2">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {t(
+                filtered.length === 1
+                  ? "nav.palette.results_one"
+                  : "nav.palette.results_other",
+                { count: filtered.length },
+              )}
             </span>
-            <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-              <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1 py-0.5 font-mono uppercase">
-                ↑
-              </kbd>
-              <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1 py-0.5 font-mono uppercase">
-                ↓
-              </kbd>
-              <span>navigate</span>
-              <kbd className="rounded border border-white/[0.08] bg-white/[0.04] px-1 py-0.5 font-mono uppercase">
-                ↵
-              </kbd>
-              <span>select</span>
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              <kbd className="rounded border border-border bg-surface px-1 py-0.5">↑</kbd>
+              <kbd className="rounded border border-border bg-surface px-1 py-0.5">↓</kbd>
+              <span>{t("nav.palette.navigate")}</span>
+              <kbd className="rounded border border-border bg-surface px-1 py-0.5">↵</kbd>
+              <span>{t("nav.palette.select")}</span>
             </div>
           </div>
         </Dialog.Content>

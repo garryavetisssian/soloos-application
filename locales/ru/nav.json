@@ -1,0 +1,67 @@
+{
+  "page_titles": {
+    "new_cover_letter": "Новое сопроводительное",
+    "cover_letters": "Сопроводительные",
+    "career_profile": "Карьерный профиль",
+    "settings": "Настройки",
+    "portfolio": "Портфолио",
+    "dashboard": "Дашборд",
+    "cvs": "Резюме",
+    "job_tracker": "Заявки"
+  },
+  "aria": {
+    "open_navigation": "Открыть меню",
+    "close_navigation": "Закрыть меню",
+    "open_command_palette": "Открыть командную палитру",
+    "account_menu": "Меню аккаунта",
+    "dismiss": "Закрыть"
+  },
+  "search": "Поиск",
+  "account": {
+    "your_account": "Ваш аккаунт",
+    "profile": "Профиль",
+    "help_feedback": "Помощь и обратная связь",
+    "log_out": "Выйти"
+  },
+  "banner": {
+    "completeness_lead": "Профиль заполнен на {{percent}}%.",
+    "completeness_unlock": "AI-сопроводительные открываются при {{threshold}}%.",
+    "complete_profile_cta": "Заполнить профиль →"
+  },
+  "palette": {
+    "title": "Командная палитра",
+    "description": "Поиск по приложению или быстрое действие.",
+    "search_placeholder": "Найти или перейти…",
+    "no_matches": "Ничего не найдено по запросу «{{query}}».",
+    "results_one": "{{count}} результат",
+    "results_other": "{{count}} результатов",
+    "navigate": "навигация",
+    "select": "выбрать",
+    "items": {
+      "dashboard": { "label": "Дашборд" },
+      "new_cover_letter": {
+        "label": "Новое сопроводительное",
+        "hint": "Создать по ссылке или описанию"
+      },
+      "cover_letters": { "label": "Сопроводительные" },
+      "links": {
+        "label": "Ссылки",
+        "hint": "GitHub, Figma, статьи, App Store"
+      },
+      "cvs": { "label": "Резюме" },
+      "jobs": {
+        "label": "Заявки",
+        "hint": "Канбан — Сохранено → Отклик → Интервью → Оффер"
+      },
+      "profile": {
+        "label": "Профиль",
+        "hint": "Личные данные, навыки, цели, настройки"
+      },
+      "add_job": {
+        "label": "Добавить вакансию",
+        "hint": "Сохранить отклик вручную"
+      },
+      "signout": { "label": "Выйти" }
+    }
+  }
+}

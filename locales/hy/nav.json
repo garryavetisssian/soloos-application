@@ -1,0 +1,67 @@
+{
+  "page_titles": {
+    "new_cover_letter": "Նոր ուղեկցող նամակ",
+    "cover_letters": "Ուղեկցող նամակներ",
+    "career_profile": "Կարիերայի պրոֆիլ",
+    "settings": "Կարգավորումներ",
+    "portfolio": "Պորտֆոլիո",
+    "dashboard": "Գործիքներ",
+    "cvs": "CV-ներ",
+    "job_tracker": "Հայտերի հետևում"
+  },
+  "aria": {
+    "open_navigation": "Բացել նավիգացիան",
+    "close_navigation": "Փակել նավիգացիան",
+    "open_command_palette": "Բացել հրամանների վահանակը",
+    "account_menu": "Հաշվի մենյու",
+    "dismiss": "Փակել"
+  },
+  "search": "Որոնում",
+  "account": {
+    "your_account": "Ձեր հաշիվը",
+    "profile": "Պրոֆիլ",
+    "help_feedback": "Օգնություն և կարծիք",
+    "log_out": "Դուրս գալ"
+  },
+  "banner": {
+    "completeness_lead": "Ձեր պրոֆիլը լրացված է {{percent}}%-ով։",
+    "completeness_unlock": "AI ուղեկցող նամակները բացվում են {{threshold}}%-ից։",
+    "complete_profile_cta": "Լրացնել պրոֆիլը →"
+  },
+  "palette": {
+    "title": "Հրամանների վահանակ",
+    "description": "Որոնել հավելվածում կամ արագ գործողություն։",
+    "search_placeholder": "Որոնել կամ անցնել…",
+    "no_matches": "«{{query}}»-ի համար արդյունք չկա։",
+    "results_one": "{{count}} արդյունք",
+    "results_other": "{{count}} արդյունք",
+    "navigate": "նավիգացիա",
+    "select": "ընտրել",
+    "items": {
+      "dashboard": { "label": "Գործիքներ" },
+      "new_cover_letter": {
+        "label": "Նոր ուղեկցող նամակ",
+        "hint": "Ստեղծել հղումից կամ նկարագրությունից"
+      },
+      "cover_letters": { "label": "Ուղեկցող նամակներ" },
+      "links": {
+        "label": "Հղումներ",
+        "hint": "GitHub, Figma, հոդվածներ, App Store"
+      },
+      "cvs": { "label": "CV-ներ" },
+      "jobs": {
+        "label": "Հայտերի հետևում",
+        "hint": "Կանբան — Պահված → Ուղարկված → Հարցազրույց → Առաջարկ"
+      },
+      "profile": {
+        "label": "Պրոֆիլ",
+        "hint": "Տվյալներ, հմտություններ, նպատակային դեր"
+      },
+      "add_job": {
+        "label": "Ավելացնել հայտ",
+        "hint": "Ձեռքով գրանցել դիմում"
+      },
+      "signout": { "label": "Դուրս գալ" }
+    }
+  }
+}

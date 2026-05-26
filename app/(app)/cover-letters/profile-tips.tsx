@@ -7,8 +7,11 @@ import {
   Target,
   Wrench,
 } from "lucide-react";
+import { getServerT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 import type { ProfileFormState } from "@/lib/profile-form";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
 
 interface Tip {
   id: string;
@@ -30,96 +33,72 @@ const TIP_HREF = "/settings/profile" as const;
 const WEAK_SUMMARY_BELOW = 100;
 const SKILLS_TARGET = 5;
 
-function computeTips(p: ProfileFormState): Tip[] {
+function computeTips(p: ProfileFormState, t: T): Tip[] {
   const tips: Tip[] = [];
+  const tip = (
+    id: string,
+    icon: React.ReactNode,
+    variant: Tip["variant"],
+  ): Tip => ({
+    id,
+    title: t(`pages.profile_tips.${id}.title`),
+    text: t(`pages.profile_tips.${id}.text`),
+    actionLabel: t(`pages.profile_tips.${id}.action`),
+    icon,
+    variant,
+  });
 
   // Portfolio: suggest add when missing, otherwise show "connected" so the
   // user understands their URL is referenced (without faking analysis).
   if (!p.portfolio_url.trim()) {
-    tips.push({
-      id: "portfolio_missing",
-      title: "Add your portfolio",
-      text: "SoloOS can use your portfolio to understand your projects and make cover letters more specific.",
-      actionLabel: "Add portfolio",
-      icon: <Briefcase className="h-4 w-4" />,
-      variant: "suggest",
-    });
+    tips.push(
+      tip("portfolio_missing", <Briefcase className="h-4 w-4" />, "suggest"),
+    );
   } else {
-    tips.push({
-      id: "portfolio_connected",
-      title: "Portfolio connected",
-      text: "Project analysis is coming soon. For now, SoloOS will reference your portfolio link when relevant.",
-      actionLabel: "View profile",
-      icon: <Briefcase className="h-4 w-4" />,
-      variant: "info",
-    });
+    tips.push(
+      tip("portfolio_connected", <Briefcase className="h-4 w-4" />, "info"),
+    );
   }
 
   if (p.professional_summary.trim().length < WEAK_SUMMARY_BELOW) {
-    tips.push({
-      id: "summary_weak",
-      title: "Improve your professional summary",
-      text: "A stronger summary helps SoloOS position you more clearly for each role.",
-      actionLabel: "Improve summary",
-      icon: <PencilLine className="h-4 w-4" />,
-      variant: "suggest",
-    });
+    tips.push(tip("summary_weak", <PencilLine className="h-4 w-4" />, "suggest"));
   }
 
   if (p.skills.length < SKILLS_TARGET) {
-    tips.push({
-      id: "skills_thin",
-      title: "Add more skills",
-      text: "More skills help SoloOS match your profile with job requirements more accurately.",
-      actionLabel: "Add skills",
-      icon: <Wrench className="h-4 w-4" />,
-      variant: "suggest",
-    });
+    tips.push(tip("skills_thin", <Wrench className="h-4 w-4" />, "suggest"));
   }
 
   if (p.tools.length === 0) {
-    tips.push({
-      id: "tools_missing",
-      title: "Add your tools",
-      text: "Tools like Figma, Notion, Linear, Webflow, or analytics platforms help tailor the letter.",
-      actionLabel: "Add tools",
-      icon: <Wrench className="h-4 w-4" />,
-      variant: "suggest",
-    });
+    tips.push(tip("tools_missing", <Wrench className="h-4 w-4" />, "suggest"));
   }
 
   if (p.languages.length === 0) {
-    tips.push({
-      id: "languages_missing",
-      title: "Add languages",
-      text: "Language information helps SoloOS adapt applications for international roles.",
-      actionLabel: "Add languages",
-      icon: <Languages className="h-4 w-4" />,
-      variant: "suggest",
-    });
+    tips.push(
+      tip("languages_missing", <Languages className="h-4 w-4" />, "suggest"),
+    );
   }
 
   if (p.target_industries.length === 0) {
-    tips.push({
-      id: "industries_missing",
-      title: "Add target industries",
-      text: "Target industries help SoloOS frame your experience for the roles you actually want.",
-      actionLabel: "Add industries",
-      icon: <Target className="h-4 w-4" />,
-      variant: "suggest",
-    });
+    tips.push(
+      tip("industries_missing", <Target className="h-4 w-4" />, "suggest"),
+    );
   }
 
   return tips;
 }
 
-export function ProfileTips({ profile }: { profile: ProfileFormState }) {
-  const tips = computeTips(profile);
+export async function ProfileTips({
+  profile,
+}: {
+  profile: ProfileFormState;
+}) {
+  const { t } = await getServerT();
+  const tips = computeTips(profile, t);
   if (tips.length === 0) return null;
 
   return (
     <section
-      aria-label="AI-readiness suggestions"
+      aria-label={t("pages.profile_tips.section_label")}
       className="-mx-1 overflow-x-auto pb-1"
     >
       <ul className="flex gap-3 px-1">
@@ -143,7 +122,7 @@ function TipCard({ tip }: { tip: Tip }) {
       href={TIP_HREF}
       aria-label={`${tip.actionLabel} — ${tip.title}`}
       className={cn(
-        "group flex h-full max-h-[88px] items-start gap-3 overflow-hidden rounded-2xl border p-3 transition-colors",
+        "group flex h-full max-h-[88px] items-start gap-3 overflow-hidden rounded-xl border p-3 shadow-sm transition-colors",
         isInfo
           ? "border-success/25 bg-success/5"
           : "border-border bg-surface hover:border-primary/40 hover:bg-surface-elevated",

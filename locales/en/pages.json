@@ -1,0 +1,83 @@
+{
+  "jobs": {
+    "title": "Job tracker",
+    "subtitle": "Move applications through your pipeline.",
+    "add_job": "Add job",
+    "coming_title": "The pipeline is almost here",
+    "coming_body": "Add jobs from LinkedIn, Indeed, Upwork — or anywhere — and move them across Saved → Applied → Interview → Offer.",
+    "cta_write_letter": "Write a cover letter",
+    "status": {
+      "saved": "Saved",
+      "applied": "Applied",
+      "interview": "Interview",
+      "offer": "Offer",
+      "rejected": "Rejected"
+    }
+  },
+  "cvs": {
+    "title": "CVs",
+    "subtitle": "Build, edit and export CVs in any language.",
+    "new_cv": "New CV",
+    "coming_title": "CV Builder is on the way",
+    "coming_body_lead": "Section list, editable middle column, live preview, and PDF export with the canonical",
+    "coming_body_tail": "filename. Coming soon.",
+    "filename_example": "First_Last_Position_CV_LANG.pdf",
+    "cta_try_letters": "Try cover letters instead",
+    "cta_polish_profile": "Polish your profile",
+    "editor": {
+      "sections": "Sections",
+      "section": {
+        "personal_info": "Personal Info",
+        "summary": "Summary",
+        "experience": "Experience",
+        "education": "Education",
+        "skills": "Skills",
+        "projects": "Projects"
+      },
+      "heading": "Editing CV",
+      "improve_ai": "Improve with AI",
+      "download_pdf": "Download PDF",
+      "cv_id": "CV id: {{id}}",
+      "placeholder": "Section editor goes here.",
+      "preview": "Preview"
+    }
+  },
+  "profile_tips": {
+    "section_label": "AI-readiness suggestions",
+    "portfolio_missing": {
+      "title": "Add your portfolio",
+      "text": "SoloOS can use your portfolio to understand your projects and make cover letters more specific.",
+      "action": "Add portfolio"
+    },
+    "portfolio_connected": {
+      "title": "Portfolio connected",
+      "text": "Project analysis is coming soon. For now, SoloOS will reference your portfolio link when relevant.",
+      "action": "View profile"
+    },
+    "summary_weak": {
+      "title": "Improve your professional summary",
+      "text": "A stronger summary helps SoloOS position you more clearly for each role.",
+      "action": "Improve summary"
+    },
+    "skills_thin": {
+      "title": "Add more skills",
+      "text": "More skills help SoloOS match your profile with job requirements more accurately.",
+      "action": "Add skills"
+    },
+    "tools_missing": {
+      "title": "Add your tools",
+      "text": "Tools like Figma, Notion, Linear, Webflow, or analytics platforms help tailor the letter.",
+      "action": "Add tools"
+    },
+    "languages_missing": {
+      "title": "Add languages",
+      "text": "Language information helps SoloOS adapt applications for international roles.",
+      "action": "Add languages"
+    },
+    "industries_missing": {
+      "title": "Add target industries",
+      "text": "Target industries help SoloOS frame your experience for the roles you actually want.",
+      "action": "Add industries"
+    }
+  }
+}

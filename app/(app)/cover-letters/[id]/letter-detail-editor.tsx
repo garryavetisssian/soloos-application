@@ -384,7 +384,9 @@ export function LetterDetailEditor({ letter }: Props) {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="truncate text-h1 tracking-tight">{heading}</h1>
+          <h1 className="truncate text-h1 font-semibold tracking-[-0.02em] text-foreground">
+            {heading}
+          </h1>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-small text-muted-foreground">
             <span className="inline-flex items-center gap-1">
               <Mail className="h-3.5 w-3.5" />
@@ -495,7 +497,7 @@ export function LetterDetailEditor({ letter }: Props) {
       )}
 
       {/* Editor */}
-      <section className="rounded-2xl border border-border bg-surface p-1.5">
+      <section className="rounded-xl border border-border bg-surface p-1.5 shadow-sm">
         <Textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -631,7 +633,7 @@ function TranslateMenu({
           align="end"
           sideOffset={6}
           className={cn(
-            "z-50 min-w-[200px] overflow-hidden rounded-lg border border-border bg-surface-elevated p-1 shadow-lg shadow-black/30",
+            "z-50 min-w-[200px] overflow-hidden rounded-lg border border-border bg-surface p-1 shadow-md",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1",
           )}
         >
@@ -645,7 +647,7 @@ function TranslateMenu({
                 disabled={isCurrent || translating != null}
                 className={cn(
                   "flex cursor-pointer items-center justify-between gap-3 rounded-md px-3 py-2 text-small outline-none transition-colors",
-                  "focus:bg-surface focus:text-foreground",
+                  "focus:bg-surface-elevated focus:text-foreground",
                   "data-[disabled]:pointer-events-none data-[disabled]:opacity-60",
                 )}
               >

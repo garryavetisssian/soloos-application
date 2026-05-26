@@ -1,0 +1,87 @@
+{
+  "greeting": {
+    "working_late": "Working late",
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening",
+    "fallback_name": "there",
+    "subtitle": "Here's what's moving in your career today."
+  },
+  "stats": {
+    "saved_letters": "Saved letters",
+    "in_progress": "In progress",
+    "portfolio_links": "Portfolio links",
+    "cvs": "CVs"
+  },
+  "quick_actions": {
+    "title": "Quick actions",
+    "open": "Open",
+    "write_letter": {
+      "title": "Write a cover letter",
+      "body": "Paste a job link or description — get a tailored letter in seconds."
+    },
+    "track_application": {
+      "title": "Track an application",
+      "body": "Move applications through Saved → Applied → Interview → Offer."
+    },
+    "add_portfolio": {
+      "title": "Add a portfolio link",
+      "body": "GitHub, Figma, article, App Store. We'll summarize it for you."
+    },
+    "polish_profile": {
+      "title": "Polish your profile",
+      "body": "Stronger profile makes every AI letter more specific."
+    }
+  },
+  "profile_health": {
+    "title": "Profile health",
+    "strength": "Strength",
+    "unlock_hint": "Unlock AI cover letters at {{threshold}}%.",
+    "improve": "Improve",
+    "all_good": "Profile looks great. Every section is filled.",
+    "missing": {
+      "portfolio": "Add portfolio link",
+      "skills_first": "Add your first skills",
+      "skills_more_one": "Add 1 more skill",
+      "skills_more_other": "Add {{count}} more skills",
+      "summary": "Improve professional summary",
+      "industries": "Add target industries",
+      "tools": "Add tools you use"
+    }
+  },
+  "recent_activity": {
+    "title": "Recent activity",
+    "empty": "No activity yet. Save your first cover letter or add a job.",
+    "saved_letter_with_target": "Saved letter · {{target}}",
+    "saved_letter": "Saved a cover letter",
+    "added_job": "Added {{company}} — {{position}}",
+    "just_now": "Just now",
+    "minutes_ago": "{{count}}m ago",
+    "hours_ago": "{{count}}h ago",
+    "days_ago": "{{count}}d ago"
+  },
+  "pipeline": {
+    "title": "Job pipeline",
+    "saved": "Saved",
+    "applied": "Applied",
+    "interview": "Interview",
+    "offer": "Offer",
+    "total": "{{count}} total",
+    "open": "Open pipeline"
+  },
+  "suggestions": {
+    "title": "Try next",
+    "first_letter": {
+      "title": "Generate your first cover letter",
+      "body": "Paste a job link — SoloOS extracts company context and writes a tailored letter."
+    },
+    "add_portfolio": {
+      "title": "Add your portfolio",
+      "body": "Cover letters become more specific when SoloOS can reference your work."
+    },
+    "strengthen_summary": {
+      "title": "Strengthen your summary",
+      "body": "A richer professional summary lets the AI position you more clearly."
+    }
+  }
+}

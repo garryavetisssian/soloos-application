@@ -1,22 +1,33 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Armenian } from "next/font/google";
 import "./globals.css";
 
-// One sans family across the app — Vercel's Geist. Modern, distinctively
-// not Inter, high-legibility at every size. Carries Latin glyphs;
-// Cyrillic and Armenian fall back to the system stack (fonts.google.com
-// hosts Geist with Latin extended only).
+// ============================================================
+// Typography — "Clean Slate"
+//
+// Geist (Vercel's sans) carries the entire UI — clean, geometric,
+// highly readable. Geist Mono covers the rare tabular/code bits.
+// Noto Sans Armenian is the per-character glyph fallback for hy
+// (and any Cyrillic Geist lacks), wired through the CSS font stack
+// in tailwind.config.ts so a single page can mix scripts without
+// locale-aware classes.
+// ============================================================
+
 const geist = Geist({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-geist",
   display: "swap",
 });
 
-// Geist Mono — used for metadata (UPPERCASE tracked eyebrows, tabular
-// numbers in stats, status pills). Same family voice as the body font.
 const geistMono = Geist_Mono({
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   variable: "--font-geist-mono",
+  display: "swap",
+});
+
+const notoSansArmenian = Noto_Sans_Armenian({
+  subsets: ["armenian"],
+  variable: "--font-noto-sans-armenian",
   display: "swap",
 });
 
@@ -32,7 +43,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${geist.variable} ${geistMono.variable}`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={[
+        geist.variable,
+        geistMono.variable,
+        notoSansArmenian.variable,
+      ].join(" ")}
+    >
+      <head>
+        {/* No-flash theme init — blocking head script, runs before paint. */}
+        <script src="/theme-init.js" />
+      </head>
       <body className="min-h-screen font-sans">{children}</body>
     </html>
   );

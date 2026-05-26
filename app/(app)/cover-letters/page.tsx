@@ -20,8 +20,6 @@ export default async function CoverLettersLibraryPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // RLS scopes the query to the current user; the explicit eq is a
-  // defence-in-depth check in case a future policy edit weakens that.
   const { data, error } = await supabase
     .from("saved_cover_letters")
     .select(
@@ -40,24 +38,26 @@ export default async function CoverLettersLibraryPage() {
   const tt = (key: string) => t(`cover_letter.${key}`);
 
   return (
-    <div className="mx-auto flex max-w-[1280px] flex-col px-6 py-8 sm:px-8">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-h1 tracking-tight">
-            {tt("library.title")}
-          </h1>
-          <p className="pt-1 text-body text-secondary-foreground">
-            {tt("library.subtitle")}
-          </p>
+    <div className="mx-auto flex max-w-[1280px] flex-col px-6 py-10 sm:px-10">
+      <header className="animate-fade-in">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-h1 font-semibold tracking-[-0.02em] text-foreground">
+              {tt("library.title")}
+            </h1>
+            <p className="mt-2 max-w-[58ch] text-body text-muted-foreground">
+              {tt("library.subtitle")}
+            </p>
+          </div>
+          {letters.length > 0 && (
+            <Button asChild>
+              <Link href="/cover-letters/new">
+                <Plus className="h-4 w-4" />
+                {tt("library.new_button")}
+              </Link>
+            </Button>
+          )}
         </div>
-        {letters.length > 0 && (
-          <Button asChild>
-            <Link href="/cover-letters/new">
-              <Plus className="h-4 w-4" />
-              {tt("library.new_button")}
-            </Link>
-          </Button>
-        )}
       </header>
 
       {letters.length === 0 ? (
@@ -86,25 +86,24 @@ function EmptyState({
   ctaLabel: string;
 }) {
   return (
-    <section className="mt-10 flex flex-col items-center justify-center gap-5 rounded-[24px] border border-dashed border-border bg-surface p-14 text-center">
-      <div className="relative">
-        <span className="absolute inset-0 -z-10 rounded-2xl bg-gradient-to-br from-primary/30 via-violet-500/20 to-cyan-500/20 blur-2xl" />
-        <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-elevated text-primary ring-1 ring-primary/20">
-          <Mail className="h-7 w-7" />
-        </span>
+    <section className="mt-10 flex flex-col items-center rounded-xl border border-border bg-surface px-6 py-16 text-center shadow-sm sm:px-16">
+      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-accent-soft text-primary">
+        <Mail className="h-6 w-6" />
+      </span>
+      <h2 className="mt-5 text-h2 font-semibold tracking-[-0.015em] text-foreground">
+        {title}
+      </h2>
+      <p className="mx-auto mt-2 max-w-[44ch] text-body text-muted-foreground">
+        {body}
+      </p>
+      <div className="mt-6">
+        <Button asChild size="lg">
+          <Link href="/cover-letters/new">
+            <Plus className="h-4 w-4" />
+            {ctaLabel}
+          </Link>
+        </Button>
       </div>
-      <div className="space-y-1.5">
-        <h2 className="text-h2 tracking-tight">{title}</h2>
-        <p className="max-w-[420px] text-body text-secondary-foreground">
-          {body}
-        </p>
-      </div>
-      <Button asChild size="lg">
-        <Link href="/cover-letters/new">
-          <Plus className="h-4 w-4" />
-          {ctaLabel}
-        </Link>
-      </Button>
     </section>
   );
 }

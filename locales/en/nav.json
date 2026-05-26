@@ -1,0 +1,67 @@
+{
+  "page_titles": {
+    "new_cover_letter": "New cover letter",
+    "cover_letters": "Cover letters",
+    "career_profile": "Career profile",
+    "settings": "Settings",
+    "portfolio": "Portfolio",
+    "dashboard": "Dashboard",
+    "cvs": "CVs",
+    "job_tracker": "Job tracker"
+  },
+  "aria": {
+    "open_navigation": "Open navigation",
+    "close_navigation": "Close navigation",
+    "open_command_palette": "Open command palette",
+    "account_menu": "Account menu",
+    "dismiss": "Dismiss"
+  },
+  "search": "Search",
+  "account": {
+    "your_account": "Your account",
+    "profile": "Profile",
+    "help_feedback": "Help & feedback",
+    "log_out": "Log out"
+  },
+  "banner": {
+    "completeness_lead": "Your profile is {{percent}}% complete.",
+    "completeness_unlock": "AI cover letters unlock at {{threshold}}%.",
+    "complete_profile_cta": "Complete profile →"
+  },
+  "palette": {
+    "title": "Command palette",
+    "description": "Search the app or run an action.",
+    "search_placeholder": "Search or jump to…",
+    "no_matches": "No matches for \"{{query}}\".",
+    "results_one": "{{count}} result",
+    "results_other": "{{count}} results",
+    "navigate": "navigate",
+    "select": "select",
+    "items": {
+      "dashboard": { "label": "Dashboard" },
+      "new_cover_letter": {
+        "label": "New cover letter",
+        "hint": "Generate from a job link or description"
+      },
+      "cover_letters": { "label": "Cover letters" },
+      "links": {
+        "label": "Links",
+        "hint": "GitHub, Figma, articles, app store"
+      },
+      "cvs": { "label": "CVs" },
+      "jobs": {
+        "label": "Job tracker",
+        "hint": "Kanban — Saved → Applied → Interview → Offer"
+      },
+      "profile": {
+        "label": "Profile",
+        "hint": "Identity, skills, target role, preferences"
+      },
+      "add_job": {
+        "label": "Add a job",
+        "hint": "Manually log an application"
+      },
+      "signout": { "label": "Log out" }
+    }
+  }
+}

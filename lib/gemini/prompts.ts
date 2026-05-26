@@ -130,7 +130,7 @@ Return ONLY a JSON object — no preamble, no markdown — with these keys:
 - "is_job_page": boolean — true if this looks like a job posting; false for marketing pages, login walls, captchas, 404s, etc.
 - "company_name": string (short, from the page; "" if not found)
 - "job_title": string (the role title, in ${targetLanguage} if it's a generic role like "Frontend Engineer"; "" if not found)
-- "job_summary": string (2-3 sentences capturing the role, in ${targetLanguage}; "" if unclear)
+- "job_summary": string (in ${targetLanguage}). Required when ANY of company, role, city, salary, or work-format is on the page. Write 2-3 sentences when there is enough body content. When the page only contains a thin preview (job title + company + city, no real description — common on hh.ru thumbnail previews), still produce a 1-sentence summary that names what you DO know (role, company, city/format if present), e.g. "UI/UX designer role at Skytec, based in Moscow." Return "" only when the page truly contains no job-related text at all.
 - "responsibilities": string (bullet-style key responsibilities in ${targetLanguage}, separated by " · " or newlines; "" if none)
 - "requirements": string (bullet-style key requirements in ${targetLanguage}; "" if none)
 - "company_context": string (1-3 sentences on what the company does, in ${targetLanguage}; "" if not found)
@@ -411,14 +411,14 @@ EMPLOYER CONTEXT (from the job page${jobResearch.url ? ` at ${jobResearch.url}` 
 When writing the "why this role/company is interesting" beat, naturally reference one or two specific details from this employer context (the product, the company's focus, the tone). Do NOT write "I researched your company" or "based on my research" or similar meta-statements — just sound like you genuinely know the product/company.`
       : "";
 
-    // Portfolio links — formatted as a single block listing each link
-    // with its type, what's inside it, and a hint on when to reference
-    // it. The prompt instructs Gemini to choose the 1–2 most relevant
-    // to the role and weave them in as concrete project mentions plus
-    // the URL — never as a generic "links" footer.
+    // Portfolio links — supplemental specific-project references that
+    // sit ALONGSIDE the profile's single Portfolio URL (which is
+    // unconditional and lives in beat 4 of the letter). The prompt
+    // tells Gemini these are extra project mentions, never substitutes
+    // for the profile URL.
     const portfolioBlock =
       portfolioLinks.length > 0
-        ? `\n\nCANDIDATE PORTFOLIO LINKS (the candidate's own public work — choose the 1–2 most relevant to THIS role and weave them in naturally):
+        ? `\n\nADDITIONAL PROJECT LINKS (the candidate's specific public work — these SUPPLEMENT the profile Portfolio URL, they NEVER replace it):
 ${portfolioLinks
   .map((l, i) => {
     const lines: string[] = [];
@@ -432,11 +432,12 @@ ${portfolioLinks
   })
   .join("\n\n")}
 
-HOW TO REFERENCE PORTFOLIO LINKS (read this carefully):
-- Pick the 1–2 links most relevant to the role / company / job description. SKIP links that don't fit. It is better to reference no portfolio link than to shoehorn an irrelevant one.
-- When you do reference a link, weave it INTO a sentence that already does meaningful work — name the project + a short concrete description (drawn from "What's inside") + the URL. Example: "I designed Duck Master — a mobile card-game with progression UI and a full UI kit — you can see the flows at https://www.figma.com/design/abc/…". Never write a separate "Here are my links:" block.
+HOW TO USE THESE PROJECT LINKS (read this carefully):
+- The profile Portfolio URL (the "Portfolio: <url>" line in the candidate profile) is ALREADY mandatory in the closing — it must always be referenced. The links here are EXTRA, they do not replace it.
+- You MAY pick ONE of these project links to name SPECIFICALLY inside the body when it's a strong match for the role (e.g. you're describing a relevant past project — name it + drop the URL inline). Skip them entirely when nothing is a strong match — that's fine.
+- When you do reference one, weave it INTO a sentence that already does meaningful work — name the project + a short concrete description (drawn from "What's inside") + the URL. Example: "I designed Duck Master — a mobile card-game with progression UI and a full UI kit — you can see the flows at https://www.figma.com/design/abc/…". Never write a separate "Here are my links:" block.
 - Use the URLs VERBATIM. Never invent URLs, never paraphrase them, never substitute one link for another.
-- If the candidate profile also has a "Portfolio: <url>" line (i.e. a single URL in their profile), prefer the matching portfolio link from this section when relevant; do not reference both.`
+- It's fine to include both a specific project link in the body AND the profile Portfolio URL in the closing — they serve different jobs (one names a project, one points to the overall portfolio).`
         : "";
 
     // The recipient — explicit user input wins over auto-detected name.
@@ -475,7 +476,7 @@ STRUCTURE:
 1. One-line greeting (see RECIPIENT above).
 2. One sentence: who I am + why I'm reaching out about this specific role / product. Specific. Not generic.
 3. Two short sentences: the most concrete, relevant thing in my background that makes me a fit. No lists, no buzzwords.
-4. PORTFOLIO LINK — REQUIRED when the candidate profile lists a "Portfolio:" URL. Include it on its own short line right before the soft ask, e.g. "Recent work: <url>" / "Portfolio: <url>". One line, one URL, never invented. If the profile does not list a portfolio URL, skip this beat silently — do NOT invent one and do NOT substitute LinkedIn or anything else.
+4. PORTFOLIO URL — UNCONDITIONALLY MANDATORY whenever the candidate profile contains a "Portfolio: <url>" line. Include it on its own short line right before the soft ask, e.g. "Recent work: <url>" / "Portfolio: <url>" / "Портфолио: <url>" / "Պորտֆոլիո՝ <url>". One line, one URL, VERBATIM from the profile. There is no scenario in which you can skip it when the profile lists one — not even if the role seems unrelated, not even if you already named a project earlier. Never invent one, never substitute LinkedIn or any other link, never replace it with a URL from the ADDITIONAL PROJECT LINKS section (those are SUPPLEMENTAL, not substitutes). Only skip this beat — silently — if the profile genuinely does not contain a "Portfolio:" line.
 5. One soft, low-pressure ask ("happy to share more if useful", "would a quick chat make sense?"). Natural, not pushy.
 6. Sign-off: ${resolvedRecipient ? "use a casual close ('Thanks,' / 'Best,' / 'Cheers,' — pick whichever fits the language) and the candidate's FIRST NAME only on the next line." : "casual close + first name only."}
 
@@ -524,7 +525,7 @@ STRUCTURE — keep these four beats, in this order:
 1. Short, warm greeting.
 2. One or two sentences on why this role / company / product is genuinely interesting. Be specific to what's in the job description.
 3. Two or three sentences connecting the candidate's real experience to what the role asks for. Concrete, not generic.
-4. Short closing. PORTFOLIO LINK — REQUIRED when the candidate profile lists a "Portfolio:" URL. Reference it once, naturally, as part of the closing paragraph (e.g. "You can see recent work at <url>." in English; "Мои недавние работы: <url>." in Russian; "Իմ վերջին աշխատանքները՝ <url>։" in Armenian). Use the URL verbatim — never invented, never paraphrased, never replaced with a placeholder. If the profile does NOT list a portfolio URL, skip this beat silently — do not invent a portfolio, do not substitute LinkedIn or any other link.
+4. Short closing. PORTFOLIO URL — UNCONDITIONALLY MANDATORY whenever the candidate profile contains a "Portfolio: <url>" line. This is non-negotiable: every cover letter must reference that exact URL once, naturally, inside the closing paragraph. There is no scenario in which you can skip it when the profile lists one. Even if the role seems unrelated, even if there are also project links available, even if the letter feels complete without it — include the profile Portfolio URL. Example phrasings: "You can see recent work at <url>." (English), "Мои недавние работы: <url>." (Russian), "Իմ վերջին աշխատանքները՝ <url>։" (Armenian). Use the URL VERBATIM — never invented, never paraphrased, never replaced with a placeholder, never substituted with a project URL from the ADDITIONAL PROJECT LINKS section. The profile Portfolio URL and a project URL serve different purposes and can both appear (project URL in the body, profile Portfolio URL in the closing). If — and ONLY if — the candidate profile genuinely does not contain a "Portfolio:" line at all, skip this beat silently; never invent one, never substitute LinkedIn.
 
 STYLE:
 - Short sentences. Aim for 10–18 words each. Avoid long winding paragraphs.

@@ -19,7 +19,9 @@ export function FormSection({ title, description, children, className }: Props) 
     >
       {(title || description) && (
         <header className="pb-5">
-          {title && <h3 className="text-h3">{title}</h3>}
+          {title && (
+            <h3 className="text-h3 font-semibold text-foreground">{title}</h3>
+          )}
           {description && (
             <p className="pt-1 text-small text-muted-foreground">
               {description}

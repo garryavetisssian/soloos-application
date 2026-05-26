@@ -7,6 +7,7 @@ import { AlertCircle, X } from "lucide-react";
 import { Sidebar } from "./sidebar";
 import { TopBar } from "./top-bar";
 import { CommandPalette } from "./command-palette";
+import { useT } from "@/lib/i18n/hooks";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -115,42 +116,42 @@ function CompletenessBanner({
   threshold: number;
   onDismiss: () => void;
 }) {
+  const t = useT();
   return (
-    <div
-      className={cn(
-        "relative shrink-0 border-b border-white/[0.06]",
-        "bg-gradient-to-r from-primary/12 via-primary/6 to-transparent",
-      )}
-    >
+    <div className="relative shrink-0 border-b border-border bg-accent-soft">
       <div className="mx-auto flex max-w-[1280px] items-center gap-3 px-6 py-2.5 sm:px-8">
         <span
           aria-hidden
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
         >
           <AlertCircle className="h-3.5 w-3.5" />
         </span>
         <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-small">
-          <span className="text-foreground">
-            Your profile is {completeness}% complete.
+          <span className="font-medium text-foreground">
+            {t("nav.banner.completeness_lead", { percent: completeness })}
           </span>
           <span className="text-muted-foreground">
-            AI cover letters unlock at {threshold}%.
+            {t("nav.banner.completeness_unlock", { threshold })}
           </span>
           <Link
             href="/settings/profile"
-            className="font-medium text-primary underline-offset-4 transition-colors hover:underline"
+            className={cn(
+              "text-small font-medium text-primary",
+              "underline decoration-primary/40 underline-offset-4",
+              "transition-colors hover:decoration-primary",
+            )}
           >
-            Complete profile →
+            {t("nav.banner.complete_profile_cta")}
           </Link>
         </div>
         <button
           type="button"
           onClick={onDismiss}
-          aria-label="Dismiss"
+          aria-label={t("nav.aria.dismiss")}
           className={cn(
-            "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-            "text-muted-foreground transition-colors duration-fast",
-            "hover:bg-white/[0.06] hover:text-foreground",
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+            "text-muted-foreground transition-colors duration-150",
+            "hover:bg-surface hover:text-foreground",
           )}
         >
           <X className="h-3.5 w-3.5" />

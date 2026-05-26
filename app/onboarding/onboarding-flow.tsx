@@ -656,13 +656,11 @@ function DecideScreen({
   return (
     <div className="space-y-10">
       <header>
-        <div className="text-small uppercase tracking-wide text-muted-foreground">
-          Welcome
-        </div>
-        <h1 className="pt-2 text-hero tracking-tight">
+        <div className="eyebrow">Welcome</div>
+        <h1 className="pt-2 text-hero font-semibold tracking-tight text-foreground">
           Build your career profile
         </h1>
-        <p className="pt-2 max-w-2xl text-body text-secondary-foreground">
+        <p className="max-w-2xl pt-2 text-body text-muted-foreground">
           SoloOS needs some career information to generate strong job
           applications. Pick the path that fits you best.
         </p>
@@ -709,24 +707,24 @@ function DecideCard({
   recommended?: boolean;
 }) {
   return (
-    <div className="group flex min-h-[320px] flex-col justify-between gap-8 rounded-xl border border-border bg-surface p-8 transition-colors hover:border-primary/40 hover:bg-surface-elevated">
+    <div className="group flex min-h-[320px] flex-col justify-between gap-8 rounded-xl border border-border bg-surface p-8 shadow-sm transition-colors duration-150 hover:border-muted-foreground/30 hover:bg-surface-elevated">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-elevated text-foreground transition-colors group-hover:bg-primary/15 group-hover:text-primary">
+          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-elevated text-muted-foreground transition-colors duration-150 group-hover:bg-accent-soft group-hover:text-primary">
             {icon}
           </span>
           {recommended && (
-            <span className="rounded-md bg-primary/15 px-2.5 py-1 text-small font-medium text-primary">
+            <span className="rounded-md bg-accent-soft px-2.5 py-1 text-small font-medium text-primary">
               Recommended
             </span>
           )}
         </div>
         <div>
-          <div className="text-small uppercase tracking-wide text-muted-foreground">
-            {eyebrow}
+          <div className="eyebrow">{eyebrow}</div>
+          <div className="pt-2 text-h2 font-semibold tracking-tight text-foreground">
+            {title}
           </div>
-          <div className="pt-2 text-h2 tracking-tight">{title}</div>
-          <p className="pt-2 text-body text-secondary-foreground">{body}</p>
+          <p className="pt-2 text-body text-muted-foreground">{body}</p>
         </div>
       </div>
       <Button onClick={onClick} size="lg" className="self-start">
@@ -756,11 +754,11 @@ function ImportUploadScreen({
   return (
     <div className="space-y-7">
       <header>
-        <div className="text-small uppercase tracking-wide text-muted-foreground">
-          CV import
-        </div>
-        <h1 className="pt-2 text-h1 tracking-tight">Upload your CV</h1>
-        <p className="pt-1.5 text-body text-secondary-foreground">
+        <div className="eyebrow">CV import</div>
+        <h1 className="pt-2 text-h1 font-semibold tracking-tight text-foreground">
+          Upload your CV
+        </h1>
+        <p className="pt-1.5 text-body text-muted-foreground">
           PDF, up to 10 MB. SoloOS will extract your role, experience, skills
           and tools.
         </p>
@@ -831,11 +829,11 @@ function ImportReviewScreen({
   return (
     <div className="space-y-7">
       <header>
-        <div className="text-small uppercase tracking-wide text-muted-foreground">
-          CV import / Profile review
-        </div>
-        <h1 className="pt-2 text-h1 tracking-tight">Review extracted profile</h1>
-        <p className="pt-1.5 text-body text-secondary-foreground">
+        <div className="eyebrow">CV import / Profile review</div>
+        <h1 className="pt-2 text-h1 font-semibold tracking-tight text-foreground">
+          Review extracted profile
+        </h1>
+        <p className="pt-1.5 text-body text-muted-foreground">
           We pulled this from your CV. Edit anything that doesn&apos;t look
           right, then save.
         </p>
@@ -863,7 +861,9 @@ function ImportReviewScreen({
             : `Add the highlighted fields to reach ${COVER_LETTER_MIN_COMPLETENESS}%.`
         }
       >
-        <div className="text-h1 tabular-nums">{completeness}%</div>
+        <div className="text-h1 font-semibold tabular-nums text-primary">
+          {completeness}%
+        </div>
       </FormSection>
 
       <MissingFieldsActionPanel items={missing} onJumpToStep={onJumpToStep} />
@@ -938,13 +938,11 @@ function ManualStep({
       <UploadHelperCard onUploadCv={onUploadCv} />
 
       <header>
-        <div className="text-small uppercase tracking-wide text-muted-foreground">
-          {def.eyebrow}
-        </div>
-        <h1 className="pt-2 text-h1 tracking-tight">{def.title}</h1>
-        <p className="pt-1.5 text-body text-secondary-foreground">
-          {def.subtitle}
-        </p>
+        <div className="eyebrow">{def.eyebrow}</div>
+        <h1 className="pt-2 text-h1 font-semibold tracking-tight text-foreground">
+          {def.title}
+        </h1>
+        <p className="pt-1.5 text-body text-muted-foreground">{def.subtitle}</p>
       </header>
 
       {step === 1 && <BasicInfoFields data={data} update={update} errors={errors} />}
@@ -1342,7 +1340,9 @@ function ReviewStep({
             : `Add the highlighted fields to reach ${COVER_LETTER_MIN_COMPLETENESS}%.`
         }
       >
-        <div className="text-h1 tabular-nums">{completeness}%</div>
+        <div className="text-h1 font-semibold tabular-nums text-primary">
+          {completeness}%
+        </div>
       </FormSection>
 
       <ReviewBlock title="Basic information">

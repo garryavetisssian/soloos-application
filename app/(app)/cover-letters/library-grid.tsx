@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import {
   ArrowRight,
   Copy,
@@ -10,7 +10,6 @@ import {
   Globe,
   Languages,
   Loader2,
-  Mail,
   PencilLine,
   Search,
   Trash2,
@@ -67,10 +66,49 @@ export function LibraryGrid({ letters }: GridProps) {
   const [query, setQuery] = useState("");
   const [language, setLanguage] = useState<LanguageFilter>("all");
   const [source, setSource] = useState<SourceFilter>("all");
+  // Optimistic delete: rows hidden instantly when the user confirms
+  // delete, before router.refresh() refetches. Reconciled to the
+  // server's truth whenever `letters` changes.
+  const [removedIds, setRemovedIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  useEffect(() => {
+    setRemovedIds((prev) => {
+      if (prev.size === 0) return prev;
+      const present = new Set(letters.map((l) => l.id));
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (present.has(id)) {
+          next.add(id);
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [letters]);
+  const handleOptimisticDelete = (id: string) => {
+    setRemovedIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
+  const handleDeleteFailed = (id: string) => {
+    setRemovedIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return letters.filter((l) => {
+      if (removedIds.has(l.id)) return false;
       if (language !== "all" && l.language !== language) return false;
       if (source !== "all" && l.source_type !== source) return false;
       if (!q) return true;
@@ -78,7 +116,7 @@ export function LibraryGrid({ letters }: GridProps) {
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [letters, query, language, source]);
+  }, [letters, query, language, source, removedIds]);
 
   return (
     <div className="space-y-5">
@@ -126,14 +164,19 @@ export function LibraryGrid({ letters }: GridProps) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="flex items-center justify-center rounded-2xl border border-dashed border-border bg-surface p-10 text-small text-muted-foreground">
+        <div className="flex items-center justify-center rounded-xl border border-dashed border-border bg-surface p-10 text-small text-muted-foreground">
           {tt("library.no_results")}
         </div>
       ) : (
         <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((letter) => (
             <li key={letter.id}>
-              <LetterCard letter={letter} t={tt} />
+              <LetterCard
+                letter={letter}
+                onOptimisticDelete={handleOptimisticDelete}
+                onDeleteFailed={handleDeleteFailed}
+                t={tt}
+              />
             </li>
           ))}
         </ul>
@@ -144,10 +187,17 @@ export function LibraryGrid({ letters }: GridProps) {
 
 interface LetterCardProps {
   letter: SavedLetterRow;
+  onOptimisticDelete: (id: string) => void;
+  onDeleteFailed: (id: string) => void;
   t: (key: string, vars?: Record<string, string | number>) => string;
 }
 
-function LetterCard({ letter, t }: LetterCardProps) {
+function LetterCard({
+  letter,
+  onOptimisticDelete,
+  onDeleteFailed,
+  t,
+}: LetterCardProps) {
   const router = useRouter();
   const { toast } = useToast();
   const { run, isLocked } = useActionLock();
@@ -223,9 +273,18 @@ function LetterCard({ letter, t }: LetterCardProps) {
       return;
     }
     startDelete(async () => {
+      // Optimistically hide the row first so the success toast and the
+      // disappearance happen together, not staggered by router.refresh().
+      onOptimisticDelete(letter.id);
       const result = await run(() => deleteCoverLetterAction(letter.id));
-      if (!result) return; // lock held
+      if (!result) {
+        // The action lock was held — un-hide and bail. No toast (the
+        // existing action-lock UX is silent here).
+        onDeleteFailed(letter.id);
+        return;
+      }
       if (!result.ok) {
+        onDeleteFailed(letter.id);
         toast.error(t("errors.delete_title"));
         setConfirmDelete(false);
         return;
@@ -238,57 +297,49 @@ function LetterCard({ letter, t }: LetterCardProps) {
   return (
     <Link
       href={`/cover-letters/${letter.id}`}
-      className={cn(
-        "group block rounded-2xl border border-border bg-surface p-5 transition-all duration-200",
-        "hover:-translate-y-0.5 hover:border-primary/40",
-      )}
+      className="lift-on-hover group relative block rounded-xl border border-border bg-surface p-5 shadow-sm"
     >
-      <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/15 text-violet-400">
-          <Mail className="h-4 w-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-body font-medium text-foreground">
-            {heading}
-          </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-small text-muted-foreground">
-            <span>{formatDate(updatedAt)}</span>
-            {letter.language && (
-              <>
-                <span className="text-border">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <Languages className="h-3 w-3" />
-                  {t(`language.${letter.language.toLowerCase()}`)}
-                </span>
-              </>
-            )}
-            {letter.source_type && (
-              <>
-                <span className="text-border">·</span>
-                <span className="inline-flex items-center gap-1">
-                  {letter.source_type === "job_link" ? (
-                    <Globe className="h-3 w-3" />
-                  ) : (
-                    <PencilLine className="h-3 w-3" />
-                  )}
-                  {letter.source_type === "job_link"
-                    ? t("library.source_job_link")
-                    : t("library.source_manual")}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
+      {/* Date line */}
+      <div className="flex items-center justify-between gap-3 text-small text-muted-foreground">
+        <span>{formatDate(updatedAt)}</span>
       </div>
 
-      <p className="mt-4 line-clamp-3 text-small text-secondary-foreground">
+      {/* Title — the role + company. */}
+      <h3 className="mt-2 line-clamp-2 text-h3 font-semibold tracking-[-0.01em] text-foreground">
+        {heading}
+      </h3>
+
+      {/* Body excerpt. */}
+      <p className="mt-2 line-clamp-3 text-small leading-6 text-muted-foreground">
         {preview}
       </p>
 
-      <div className="mt-5 flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1 text-small font-medium text-primary opacity-70 transition-opacity group-hover:opacity-100">
+      {/* Meta row — language + source as subtle pills. */}
+      <div className="mt-4 flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
+        {letter.language && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-label text-muted-foreground">
+            <Languages className="h-3 w-3" />
+            {t(`language.${letter.language.toLowerCase()}`)}
+          </span>
+        )}
+        {letter.source_type && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-surface-elevated px-2 py-0.5 text-label text-muted-foreground">
+            {letter.source_type === "job_link" ? (
+              <Globe className="h-3 w-3" />
+            ) : (
+              <PencilLine className="h-3 w-3" />
+            )}
+            {letter.source_type === "job_link"
+              ? t("library.source_job_link")
+              : t("library.source_manual")}
+          </span>
+        )}
+      </div>
+
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1 text-small font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
           {t("library.open")}
-          <ArrowRight className="h-3 w-3" />
+          <ArrowRight className="h-3.5 w-3.5" />
         </span>
         <div className="flex items-center gap-0.5">
           <CardIconButton title={t("actions.copy")} onClick={handleCopy}>

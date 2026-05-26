@@ -6,12 +6,13 @@ import {
   ArrowUpRight,
   Briefcase,
   FileText,
-  Heart,
   Link2,
   Mail,
   Sparkles,
   Wand2,
 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getServerT } from "@/lib/i18n/server";
 import { getCurrentProfile } from "@/lib/profile";
 import {
   COVER_LETTER_MIN_COMPLETENESS,
@@ -22,10 +23,9 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import type { JobStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import {
-  AnimatedStatTile,
-  type StatAccent,
-} from "./animated-stat-tile";
+import { AnimatedStatTile } from "./animated-stat-tile";
+
+type T = (key: string, vars?: Record<string, string | number>) => string;
 
 // Row shapes — only the columns we actually use are selected, so the
 // rest of each table doesn't matter to TypeScript.
@@ -54,6 +54,7 @@ export default async function DashboardPage() {
   const profile = await getCurrentProfile();
   if (!profile) redirect("/onboarding");
 
+  const { t } = await getServerT();
   const supabase = await createClient();
   const {
     data: { user },
@@ -111,75 +112,91 @@ export default async function DashboardPage() {
   const formState = formStateFromRow(profile);
   const completeness = computeCompleteness(formState);
 
-  const missingItems = computeMissingItems(formState);
-  const suggestions = computeSuggestions(formState, savedLetters.length);
-  const activities = buildActivities(savedLetters, jobs).slice(0, 6);
+  const missingItems = computeMissingItems(formState, t);
+  const suggestions = computeSuggestions(formState, savedLetters.length, t);
+  const activities = buildActivities(savedLetters, jobs, t).slice(0, 6);
 
-  const firstName = profile.full_name?.trim().split(/\s+/)[0] || "there";
-  const greeting = pickGreeting();
+  const firstName =
+    profile.full_name?.trim().split(/\s+/)[0] ||
+    t("dashboard.greeting.fallback_name");
+  const greeting = pickGreeting(t);
+
+  const todayLong = new Date().toLocaleDateString(undefined, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 
   return (
-    <div className="mx-auto max-w-[1280px] px-6 py-8 sm:px-8">
-      {/* ---- Hero ---- */}
-      <section className="space-y-6">
-        <header className="reveal">
-          <h1 className="text-h1 font-semibold tracking-tight">
-            {greeting},{" "}
-            <span className="bg-gradient-to-r from-primary via-[hsl(var(--accent-violet))] to-[hsl(var(--accent-cyan))] bg-clip-text text-transparent">
-              {firstName}
-            </span>
-          </h1>
-          <p className="pt-1.5 text-body text-secondary-foreground">
-            Here&apos;s what&apos;s moving in your career today.
-          </p>
-        </header>
-        <div className="reveal grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <AnimatedStatTile
-            label="Saved letters"
-            value={savedLetters.length}
-            icon={<Mail className="h-4 w-4" />}
-            accent="violet"
-            href="/cover-letters"
-          />
-          <AnimatedStatTile
-            label="In progress"
-            value={activeApplications}
-            icon={<Briefcase className="h-4 w-4" />}
-            accent="cyan"
-            href="/jobs"
-          />
-          <AnimatedStatTile
-            label="Portfolio links"
-            value={readyLinksCount}
-            icon={<Link2 className="h-4 w-4" />}
-            accent="emerald"
-            href="/portfolio"
-          />
-          <AnimatedStatTile
-            label="CVs"
-            value={cvCount}
-            icon={<FileText className="h-4 w-4" />}
-            accent="primary"
-            href="/cvs"
-          />
-        </div>
-      </section>
+    <div className="mx-auto max-w-[1200px] px-6 py-8 sm:px-8">
+      {/* ============================================================
+          Greeting header — clean sans, friendly, no masthead.
+          ============================================================ */}
+      <header className="reveal">
+        <p className="text-label uppercase tracking-wide text-muted-foreground">
+          {todayLong}
+        </p>
+        <h1 className="mt-1 text-h1 font-semibold tracking-[-0.02em] text-foreground">
+          {greeting}, {firstName}.
+        </h1>
+        <p className="mt-2 max-w-[52ch] text-body text-muted-foreground">
+          {t("dashboard.greeting.subtitle")}
+        </p>
+      </header>
 
-      {/* ---- Main grid ---- */}
-      <div className="mt-10 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+      {/* ============================================================
+          Stat cards — number + label + optional trend.
+          ============================================================ */}
+      <div className="reveal mt-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <AnimatedStatTile
+          label={t("dashboard.stats.saved_letters")}
+          value={savedLetters.length}
+          icon={<Mail className="h-[18px] w-[18px]" />}
+          accent="primary"
+          href="/cover-letters"
+        />
+        <AnimatedStatTile
+          label={t("dashboard.stats.in_progress")}
+          value={activeApplications}
+          icon={<Briefcase className="h-[18px] w-[18px]" />}
+          accent="primary"
+          href="/jobs"
+        />
+        <AnimatedStatTile
+          label={t("dashboard.stats.portfolio_links")}
+          value={readyLinksCount}
+          icon={<Link2 className="h-[18px] w-[18px]" />}
+          accent="primary"
+          href="/portfolio"
+        />
+        <AnimatedStatTile
+          label={t("dashboard.stats.cvs")}
+          value={cvCount}
+          icon={<FileText className="h-[18px] w-[18px]" />}
+          accent="primary"
+          href="/cvs"
+        />
+      </div>
+
+      {/* ============================================================
+          Two-column body — left: actions & activity, right: health,
+          pipeline, AI insights.
+          ============================================================ */}
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         <div className="reveal space-y-6">
-          <QuickActionsSection />
-          <RecentActivitySection activities={activities} />
+          <QuickActionsSection t={t} />
+          <RecentActivitySection activities={activities} t={t} />
         </div>
         <aside className="reveal space-y-6">
           <ProfileHealthSection
             completeness={completeness}
             threshold={COVER_LETTER_MIN_COMPLETENESS}
             missing={missingItems}
+            t={t}
           />
-          <JobPipelineSection pipeline={pipeline} total={jobs.length} />
+          <JobPipelineSection pipeline={pipeline} total={jobs.length} t={t} />
           {suggestions.length > 0 && (
-            <SmartSuggestionsSection suggestions={suggestions} />
+            <SmartSuggestionsSection suggestions={suggestions} t={t} />
           )}
         </aside>
       </div>
@@ -191,38 +208,37 @@ export default async function DashboardPage() {
 // Quick actions
 // ===================================================================
 
-function QuickActionsSection() {
+function QuickActionsSection({ t }: { t: T }) {
   return (
-    <section className="space-y-4">
-      <SectionHeader title="Quick actions" />
-      <div className="grid gap-3 sm:grid-cols-2">
+    <section>
+      <SectionLabel>{t("dashboard.quick_actions.title")}</SectionLabel>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <ActionCard
-          icon={<Mail className="h-5 w-5" />}
-          accent="violet"
-          title="Write a cover letter"
-          body="Paste a job link or description — get a tailored letter in seconds."
+          icon={<Mail className="h-[18px] w-[18px]" />}
+          title={t("dashboard.quick_actions.write_letter.title")}
+          body={t("dashboard.quick_actions.write_letter.body")}
+          openLabel={t("dashboard.quick_actions.open")}
           href="/cover-letters/new"
-          highlighted
         />
         <ActionCard
-          icon={<Briefcase className="h-5 w-5" />}
-          accent="cyan"
-          title="Track an application"
-          body="Move applications through Saved → Applied → Interview → Offer."
+          icon={<Briefcase className="h-[18px] w-[18px]" />}
+          title={t("dashboard.quick_actions.track_application.title")}
+          body={t("dashboard.quick_actions.track_application.body")}
+          openLabel={t("dashboard.quick_actions.open")}
           href="/jobs"
         />
         <ActionCard
-          icon={<Link2 className="h-5 w-5" />}
-          accent="emerald"
-          title="Add a portfolio link"
-          body="GitHub, Figma, article, App Store. We&rsquo;ll summarize it for you."
+          icon={<Link2 className="h-[18px] w-[18px]" />}
+          title={t("dashboard.quick_actions.add_portfolio.title")}
+          body={t("dashboard.quick_actions.add_portfolio.body")}
+          openLabel={t("dashboard.quick_actions.open")}
           href="/portfolio"
         />
         <ActionCard
-          icon={<Wand2 className="h-5 w-5" />}
-          accent="primary"
-          title="Polish your profile"
-          body="Stronger profile makes every AI letter more specific."
+          icon={<Wand2 className="h-[18px] w-[18px]" />}
+          title={t("dashboard.quick_actions.polish_profile.title")}
+          body={t("dashboard.quick_actions.polish_profile.body")}
+          openLabel={t("dashboard.quick_actions.open")}
           href="/settings/profile"
         />
       </div>
@@ -230,87 +246,41 @@ function QuickActionsSection() {
   );
 }
 
-const ACTION_ACCENT: Record<
-  StatAccent,
-  { gradient: string; text: string; iconBg: string; ring: string }
-> = {
-  primary: {
-    gradient: "from-primary/14 via-transparent to-primary/5",
-    text: "text-primary",
-    iconBg: "bg-primary/15",
-    ring: "ring-primary/30",
-  },
-  cyan: {
-    gradient: "from-cyan-500/14 via-transparent to-cyan-500/5",
-    text: "text-cyan-400",
-    iconBg: "bg-cyan-500/15",
-    ring: "ring-cyan-500/30",
-  },
-  violet: {
-    gradient: "from-violet-500/14 via-transparent to-fuchsia-500/5",
-    text: "text-violet-400",
-    iconBg: "bg-violet-500/15",
-    ring: "ring-violet-500/30",
-  },
-  emerald: {
-    gradient: "from-emerald-500/14 via-transparent to-cyan-500/5",
-    text: "text-emerald-400",
-    iconBg: "bg-emerald-500/15",
-    ring: "ring-emerald-500/30",
-  },
-};
-
 function ActionCard({
   icon,
-  accent,
   title,
   body,
+  openLabel,
   href,
-  highlighted,
 }: {
   icon: React.ReactNode;
-  accent: StatAccent;
   title: string;
   body: string;
+  openLabel: string;
   href: Route;
-  highlighted?: boolean;
 }) {
-  const a = ACTION_ACCENT[accent];
   return (
     <Link
       href={href}
       className={cn(
-        "glass-card group relative p-5 lift-on-hover",
-        highlighted && "ring-1",
-        highlighted && a.ring,
+        "group block rounded-xl border border-border bg-surface p-5 shadow-sm",
+        "transition-[transform,box-shadow,border-color] duration-150 ease-out",
+        "hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md",
       )}
     >
-      <div
-        className={cn(
-          "pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-br opacity-40 transition-opacity duration-medium group-hover:opacity-90",
-          a.gradient,
-        )}
-      />
-      <div className="relative space-y-3">
-        <span
-          className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-xl ring-1",
-            a.iconBg,
-            a.text,
-            a.ring,
-          )}
-        >
-          {icon}
-        </span>
-        <div>
-          <div className="text-body font-medium text-foreground">{title}</div>
-          <p className="mt-1 text-small text-muted-foreground">{body}</p>
-        </div>
-        <span className="inline-flex items-center gap-1 text-small font-medium text-primary opacity-0 transition-opacity duration-fast group-hover:opacity-100">
-          Open
-          <ArrowRight className="h-3 w-3" />
-        </span>
+      <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-soft text-primary">
+        {icon}
+      </span>
+      <div className="mt-3 text-body font-semibold tracking-[-0.01em] text-foreground">
+        {title}
       </div>
+      <p className="mt-1 max-w-[42ch] text-small text-muted-foreground">
+        {body}
+      </p>
+      <span className="mt-3 inline-flex items-center gap-1 text-small font-medium text-primary opacity-80 transition-opacity duration-150 group-hover:opacity-100">
+        {openLabel}
+        <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
+      </span>
     </Link>
   );
 }
@@ -323,83 +293,80 @@ function ProfileHealthSection({
   completeness,
   threshold,
   missing,
+  t,
 }: {
   completeness: number;
   threshold: number;
   missing: { label: string }[];
+  t: T;
 }) {
   const reachable = completeness >= threshold;
-  const gradientFromTo = reachable
-    ? "from-success to-emerald-400"
-    : "from-warning to-primary";
   return (
-    <section className="space-y-4">
-      <SectionHeader title="Profile health" icon={<Heart className="h-3.5 w-3.5" />} />
-      <div className="glass-card relative overflow-hidden p-5">
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <div className="text-small uppercase tracking-wide text-muted-foreground">
-              Strength
-            </div>
-            <div className="mt-1 text-hero font-semibold tabular-nums tracking-tight">
-              {completeness}%
-            </div>
-          </div>
-          <span
-            className={cn(
-              "flex h-12 w-12 items-center justify-center rounded-xl",
-              reachable
-                ? "bg-success/15 text-success ring-1 ring-success/30"
-                : "bg-warning/15 text-warning ring-1 ring-warning/30",
-            )}
-          >
-            <Heart className="h-5 w-5" />
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("dashboard.profile_health.title")}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-baseline gap-2">
+          <span className="text-[40px] font-semibold leading-none tabular-nums tracking-[-0.02em] text-foreground">
+            {completeness}
+            <span className="text-[22px] text-muted-foreground">%</span>
+          </span>
+          <span className="text-small font-medium text-muted-foreground">
+            {t("dashboard.profile_health.strength")}
           </span>
         </div>
-        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+
+        {/* Progress bar. */}
+        <div className="h-2 overflow-hidden rounded-full bg-surface-elevated">
           <div
             className={cn(
-              "h-full rounded-full bg-gradient-to-r transition-[width] duration-slow ease-out-quint",
-              gradientFromTo,
+              "h-full rounded-full transition-[width] duration-slow ease-out",
+              reachable ? "bg-success" : "bg-primary",
             )}
             style={{ width: `${Math.min(completeness, 100)}%` }}
           />
         </div>
+
         {!reachable && (
-          <p className="mt-3 text-small text-muted-foreground">
-            Unlock AI cover letters at {threshold}%.
+          <p className="text-small text-muted-foreground">
+            {t("dashboard.profile_health.unlock_hint", { threshold })}
           </p>
         )}
+
         {missing.length > 0 ? (
-          <div className="mt-5">
-            <div className="text-small uppercase tracking-wide text-muted-foreground">
-              Improve
+          <div className="space-y-2">
+            <div className="text-label uppercase tracking-wide text-muted-foreground">
+              {t("dashboard.profile_health.improve")}
             </div>
-            <ul className="mt-2 space-y-0.5">
+            <ul className="space-y-1">
               {missing.map((m) => (
                 <li key={m.label}>
                   <Link
                     href="/settings/profile"
                     className={cn(
-                      "-mx-2 flex items-center justify-between rounded-md px-2 py-1.5 text-small",
-                      "text-secondary-foreground transition-colors duration-fast",
-                      "hover:bg-surface-elevated/70 hover:text-foreground",
+                      "group flex items-center justify-between gap-3 rounded-lg px-2.5 py-2",
+                      "text-small text-foreground",
+                      "transition-colors duration-150 hover:bg-surface-elevated",
                     )}
                   >
-                    <span>{m.label}</span>
-                    <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                    <span className="flex items-center gap-2.5">
+                      <span className="flex h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                      {m.label}
+                    </span>
+                    <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
         ) : (
-          <p className="mt-5 text-small text-muted-foreground">
-            Profile looks great. Every section is filled.
+          <p className="text-small text-success">
+            {t("dashboard.profile_health.all_good")}
           </p>
         )}
-      </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -407,22 +374,28 @@ function ProfileHealthSection({
 // Recent activity
 // ===================================================================
 
-function RecentActivitySection({ activities }: { activities: ActivityItem[] }) {
+function RecentActivitySection({
+  activities,
+  t,
+}: {
+  activities: ActivityItem[];
+  t: T;
+}) {
   return (
-    <section className="space-y-4">
-      <SectionHeader title="Recent activity" />
-      <div className="glass-card p-5">
+    <section>
+      <SectionLabel>{t("dashboard.recent_activity.title")}</SectionLabel>
+      <Card className="mt-4 overflow-hidden">
         {activities.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-elevated text-muted-foreground">
-              <Sparkles className="h-4 w-4" />
+          <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-primary">
+              <Sparkles className="h-[18px] w-[18px]" />
             </span>
-            <p className="text-small text-muted-foreground">
-              No activity yet. Save your first cover letter or add a job.
+            <p className="max-w-[40ch] text-small text-muted-foreground">
+              {t("dashboard.recent_activity.empty")}
             </p>
           </div>
         ) : (
-          <ul className="-mx-2 space-y-0.5">
+          <ul className="divide-y divide-border">
             {activities.map((a, i) => {
               const href: Route =
                 a.kind === "cover_letter" ? "/cover-letters" : "/jobs";
@@ -431,40 +404,30 @@ function RecentActivitySection({ activities }: { activities: ActivityItem[] }) {
                   <Link
                     href={href}
                     className={cn(
-                      "group flex items-start gap-3 rounded-md px-2 py-2",
-                      "transition-colors duration-fast ease-out-quint",
-                      "hover:bg-white/[0.04]",
+                      "group flex items-center gap-3 px-4 py-3",
+                      "transition-colors duration-150 hover:bg-surface-elevated",
                     )}
                   >
-                    <span
-                      className={cn(
-                        "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-                        "transition-transform duration-fast ease-out-quint",
-                        "group-hover:scale-110",
-                        a.kind === "cover_letter"
-                          ? "bg-violet-500/15 text-violet-400"
-                          : "bg-cyan-500/15 text-cyan-400",
-                      )}
-                    >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-primary">
                       {a.kind === "cover_letter" ? (
-                        <Mail className="h-3.5 w-3.5" />
+                        <Mail className="h-4 w-4" />
                       ) : (
-                        <Briefcase className="h-3.5 w-3.5" />
+                        <Briefcase className="h-4 w-4" />
                       )}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-small text-foreground">
+                      <div className="truncate text-small font-medium text-foreground">
                         {a.title}
                       </div>
-                      <div className="text-small text-muted-foreground">
-                        {formatRelative(a.at)}
-                      </div>
                     </div>
+                    <span className="hidden shrink-0 text-label tabular-nums text-muted-foreground sm:inline">
+                      {formatRelative(a.at, t)}
+                    </span>
                     <ArrowUpRight
                       className={cn(
-                        "h-3.5 w-3.5 shrink-0 text-muted-foreground",
+                        "h-4 w-4 shrink-0 text-muted-foreground",
                         "opacity-0 -translate-x-1",
-                        "transition-all duration-fast ease-out-quint",
+                        "transition-all duration-150 ease-out",
                         "group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-foreground",
                       )}
                       aria-hidden
@@ -475,7 +438,7 @@ function RecentActivitySection({ activities }: { activities: ActivityItem[] }) {
             })}
           </ul>
         )}
-      </div>
+      </Card>
     </section>
   );
 }
@@ -487,32 +450,53 @@ function RecentActivitySection({ activities }: { activities: ActivityItem[] }) {
 function JobPipelineSection({
   pipeline,
   total,
+  t,
 }: {
   pipeline: Record<JobStatus, number>;
   total: number;
+  t: T;
 }) {
   return (
-    <section className="space-y-4">
-      <SectionHeader title="Job pipeline" icon={<Briefcase className="h-3.5 w-3.5" />} />
-      <Link
-        href="/jobs"
-        className="glass-card group block p-5 lift-on-hover"
-      >
-        <div className="grid grid-cols-4 gap-2">
-          <PipelineColumn label="Saved" count={pipeline.saved} />
-          <PipelineColumn label="Applied" count={pipeline.applied} accent="cyan" />
-          <PipelineColumn label="Interview" count={pipeline.interview} accent="primary" />
-          <PipelineColumn label="Offer" count={pipeline.offer} accent="emerald" />
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-4">
+        <CardTitle>{t("dashboard.pipeline.title")}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-4 gap-px overflow-hidden rounded-lg border border-border bg-border">
+          <PipelineColumn
+            label={t("dashboard.pipeline.saved")}
+            count={pipeline.saved}
+          />
+          <PipelineColumn
+            label={t("dashboard.pipeline.applied")}
+            count={pipeline.applied}
+            accent
+          />
+          <PipelineColumn
+            label={t("dashboard.pipeline.interview")}
+            count={pipeline.interview}
+            accent
+          />
+          <PipelineColumn
+            label={t("dashboard.pipeline.offer")}
+            count={pipeline.offer}
+            accent
+          />
         </div>
-        <div className="mt-4 flex items-center justify-between text-small">
-          <span className="text-muted-foreground">{total} total</span>
-          <span className="inline-flex items-center gap-1 text-primary opacity-80 transition-opacity duration-fast group-hover:opacity-100">
-            Open pipeline
-            <ArrowRight className="h-3 w-3" />
+        <Link
+          href="/jobs"
+          className="group mt-4 flex items-center justify-between"
+        >
+          <span className="text-small text-muted-foreground">
+            {t("dashboard.pipeline.total", { count: total })}
           </span>
-        </div>
-      </Link>
-    </section>
+          <span className="inline-flex items-center gap-1 text-small font-medium text-primary opacity-80 transition-opacity duration-150 group-hover:opacity-100">
+            {t("dashboard.pipeline.open")}
+            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
+          </span>
+        </Link>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -523,61 +507,65 @@ function PipelineColumn({
 }: {
   label: string;
   count: number;
-  accent?: "primary" | "cyan" | "emerald";
+  accent?: boolean;
 }) {
-  const tint =
-    accent === "cyan"
-      ? "text-cyan-400"
-      : accent === "primary"
-        ? "text-primary"
-        : accent === "emerald"
-          ? "text-emerald-400"
-          : "text-foreground";
   return (
-    <div className="flex flex-col items-center justify-center rounded-md border border-white/[0.06] bg-white/[0.03] px-2 py-3">
-      <div className={cn("text-h2 font-semibold tabular-nums tracking-tight", tint)}>
+    <div className="flex flex-col items-center justify-center bg-surface px-2 py-3">
+      <div
+        className={cn(
+          "text-[26px] font-semibold leading-none tabular-nums tracking-[-0.02em]",
+          accent && count > 0 ? "text-primary" : "text-foreground",
+        )}
+      >
         {count}
       </div>
-      <div className="pt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">
-        {label}
-      </div>
+      <div className="mt-1.5 text-label text-muted-foreground">{label}</div>
     </div>
   );
 }
 
 // ===================================================================
-// Smart suggestions
+// Smart suggestions (AI insights)
 // ===================================================================
 
 function SmartSuggestionsSection({
   suggestions,
+  t,
 }: {
   suggestions: Suggestion[];
+  t: T;
 }) {
   return (
-    <section className="space-y-4">
-      <SectionHeader title="Try next" icon={<Sparkles className="h-3.5 w-3.5" />} />
-      <ul className="space-y-2">
+    <section>
+      <SectionLabel>
+        <span className="inline-flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          {t("dashboard.suggestions.title")}
+        </span>
+      </SectionLabel>
+      <ul className="mt-4 space-y-3">
         {suggestions.map((s) => (
           <li key={s.title}>
             <Link
               href={s.href}
               className={cn(
-                "glass-card group flex items-start gap-3 p-4 lift-on-hover",
+                "group flex items-start gap-3 rounded-xl border border-border bg-surface p-4 shadow-sm",
+                "transition-[transform,box-shadow,border-color] duration-150 ease-out",
+                "hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md",
               )}
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/30">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-soft text-primary">
                 <Sparkles className="h-4 w-4" />
               </span>
               <div className="min-w-0 flex-1">
-                <div className="text-small font-medium text-foreground">
+                <div className="text-small font-semibold tracking-[-0.005em] text-foreground">
                   {s.title}
                 </div>
-                <p className="mt-0.5 text-small text-muted-foreground">
+                <p className="mt-1 text-small text-muted-foreground">
                   {s.body}
                 </p>
               </div>
-              <ArrowRight className="mt-2 h-4 w-4 shrink-0 text-muted-foreground transition-colors duration-fast group-hover:text-primary" />
+              <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-colors duration-150 group-hover:text-primary" />
             </Link>
           </li>
         ))}
@@ -587,25 +575,14 @@ function SmartSuggestionsSection({
 }
 
 // ===================================================================
-// Section header
+// Shared section label — clean uppercase eyebrow.
 // ===================================================================
 
-function SectionHeader({
-  icon,
-  title,
-}: {
-  icon?: React.ReactNode;
-  title: string;
-}) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <header className="flex items-center gap-2">
-      {icon && (
-        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-surface-elevated text-muted-foreground">
-          {icon}
-        </span>
-      )}
-      <h2 className="text-h3 font-semibold tracking-tight">{title}</h2>
-    </header>
+    <h2 className="text-label uppercase tracking-wide text-muted-foreground">
+      {children}
+    </h2>
   );
 }
 
@@ -625,57 +602,68 @@ interface ActivityItem {
   title: string;
 }
 
-function pickGreeting(): string {
+function pickGreeting(t: T): string {
   const hour = new Date().getHours();
-  if (hour < 5) return "Working late";
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+  if (hour < 5) return t("dashboard.greeting.working_late");
+  if (hour < 12) return t("dashboard.greeting.morning");
+  if (hour < 18) return t("dashboard.greeting.afternoon");
+  return t("dashboard.greeting.evening");
 }
 
-function computeMissingItems(s: ProfileFormState): { label: string }[] {
+function computeMissingItems(s: ProfileFormState, t: T): { label: string }[] {
   const items: { label: string }[] = [];
-  if (!s.portfolio_url.trim()) items.push({ label: "Add portfolio link" });
-  if (s.skills.length < 8)
-    items.push({
-      label:
-        s.skills.length === 0
-          ? "Add your first skills"
-          : `Add ${8 - s.skills.length} more skill${
-              8 - s.skills.length === 1 ? "" : "s"
-            }`,
-    });
+  if (!s.portfolio_url.trim())
+    items.push({ label: t("dashboard.profile_health.missing.portfolio") });
+  if (s.skills.length < 8) {
+    if (s.skills.length === 0) {
+      items.push({
+        label: t("dashboard.profile_health.missing.skills_first"),
+      });
+    } else {
+      const remaining = 8 - s.skills.length;
+      items.push({
+        label: t(
+          remaining === 1
+            ? "dashboard.profile_health.missing.skills_more_one"
+            : "dashboard.profile_health.missing.skills_more_other",
+          { count: remaining },
+        ),
+      });
+    }
+  }
   if (s.professional_summary.trim().length < 200)
-    items.push({ label: "Improve professional summary" });
+    items.push({ label: t("dashboard.profile_health.missing.summary") });
   if (s.target_industries.length === 0)
-    items.push({ label: "Add target industries" });
-  if (s.tools.length === 0) items.push({ label: "Add tools you use" });
+    items.push({ label: t("dashboard.profile_health.missing.industries") });
+  if (s.tools.length === 0)
+    items.push({ label: t("dashboard.profile_health.missing.tools") });
   return items.slice(0, 4);
 }
 
 function computeSuggestions(
   s: ProfileFormState,
   savedLettersCount: number,
+  t: T,
 ): Suggestion[] {
   const out: Suggestion[] = [];
   if (savedLettersCount === 0) {
     out.push({
-      title: "Generate your first cover letter",
-      body: "Paste a job link — SoloOS extracts company context and writes a tailored letter.",
+      title: t("dashboard.suggestions.first_letter.title"),
+      body: t("dashboard.suggestions.first_letter.body"),
       href: "/cover-letters/new",
     });
   }
   if (!s.portfolio_url.trim()) {
     out.push({
-      title: "Add your portfolio",
-      body: "Cover letters become more specific when SoloOS can reference your work.",
+      title: t("dashboard.suggestions.add_portfolio.title"),
+      body: t("dashboard.suggestions.add_portfolio.body"),
       href: "/settings/profile",
     });
   }
   if (s.professional_summary.trim().length < 200) {
     out.push({
-      title: "Strengthen your summary",
-      body: "A richer professional summary lets the AI position you more clearly.",
+      title: t("dashboard.suggestions.strengthen_summary.title"),
+      body: t("dashboard.suggestions.strengthen_summary.body"),
       href: "/settings/profile",
     });
   }
@@ -685,6 +673,7 @@ function computeSuggestions(
 function buildActivities(
   savedLetters: SavedLetterRow[],
   jobs: JobRow[],
+  t: T,
 ): ActivityItem[] {
   const out: ActivityItem[] = [];
   for (const l of savedLetters) {
@@ -692,29 +681,35 @@ function buildActivities(
     out.push({
       kind: "cover_letter",
       at: l.created_at,
-      title: target ? `Saved letter · ${target}` : "Saved a cover letter",
+      title: target
+        ? t("dashboard.recent_activity.saved_letter_with_target", { target })
+        : t("dashboard.recent_activity.saved_letter"),
     });
   }
   for (const j of jobs) {
     out.push({
       kind: "job",
       at: j.created_at,
-      title: `Added ${j.company} — ${j.position}`,
+      title: t("dashboard.recent_activity.added_job", {
+        company: j.company,
+        position: j.position,
+      }),
     });
   }
   out.sort((a, b) => b.at.localeCompare(a.at));
   return out;
 }
 
-function formatRelative(iso: string): string {
+function formatRelative(iso: string, t: T): string {
   const date = new Date(iso);
   const diff = Date.now() - date.getTime();
   const m = Math.floor(diff / 60_000);
-  if (m < 1) return "Just now";
-  if (m < 60) return `${m}m ago`;
+  if (m < 1) return t("dashboard.recent_activity.just_now");
+  if (m < 60) return t("dashboard.recent_activity.minutes_ago", { count: m });
   const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
+  if (h < 24) return t("dashboard.recent_activity.hours_ago", { count: h });
   const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d ago`;
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (d < 7) return t("dashboard.recent_activity.days_ago", { count: d });
+  // Beyond a week, defer to the platform's locale-aware formatter.
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
