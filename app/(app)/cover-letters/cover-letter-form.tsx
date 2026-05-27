@@ -13,10 +13,12 @@ import {
   Link2,
   Loader2,
   PencilLine,
+  Plus,
   RefreshCw,
   Scissors,
   Search,
   Sparkles,
+  X,
 } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Button } from "@/components/ui/button";
@@ -75,11 +77,39 @@ const TONE_VARIANTS: ReadonlyArray<ToneVariant> = [
   "startup",
 ];
 
-interface Props {
-  completeness: number;
+// A link the user can choose to include in the letter: their profile
+// Portfolio URL plus each eligible portfolio/project link.
+export interface SelectableLink {
+  url: string;
+  label: string;
+  kind: "profile" | "work";
 }
 
-export function CoverLetterForm({ completeness: _completeness }: Props) {
+// Append new Q&A onto existing ones, skipping any question already present
+// (case-insensitive) so the answers list stacks without duplicates.
+function mergeAnswers(
+  prev: Array<{ question: string; answer: string }>,
+  additions: Array<{ question: string; answer: string }>,
+): Array<{ question: string; answer: string }> {
+  const seen = new Set(prev.map((a) => a.question.trim().toLowerCase()));
+  const add = additions.filter(
+    (a) =>
+      a.question?.trim() &&
+      a.answer?.trim() &&
+      !seen.has(a.question.trim().toLowerCase()),
+  );
+  return add.length ? [...prev, ...add] : prev;
+}
+
+interface Props {
+  completeness: number;
+  availableLinks: SelectableLink[];
+}
+
+export function CoverLetterForm({
+  completeness: _completeness,
+  availableLinks,
+}: Props) {
   const [mode, setMode] = useState<Mode>("url");
 
   // URL mode
@@ -136,6 +166,23 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
   const [normalizing, setNormalizing] = useState<OutputLanguage | null>(null);
   const [normalizeError, setNormalizeError] = useState<ErrorState>(null);
 
+  // Which links the letter may reference. null = "auto": the AI includes a
+  // link only when it genuinely fits the role (never forced). An array =
+  // explicit: include exactly these URLs (the user hand-picked them via the
+  // selector), which may include the profile Portfolio URL.
+  const [linkSelection, setLinkSelection] = useState<string[] | null>(null);
+
+  // Screening / application questions (e.g. Upwork) the server extracted from
+  // the job + answered, shown below the letter. `answersCombined` flips once
+  // the user merges them into the letter so the panel collapses.
+  const [answers, setAnswers] = useState<
+    Array<{ question: string; answer: string }>
+  >([]);
+  const [answersCombined, setAnswersCombined] = useState(false);
+  // Manual questions the user pastes for this vacancy (one per line).
+  const [manualQuestions, setManualQuestions] = useState("");
+  const [answeringQuestions, setAnsweringQuestions] = useState(false);
+
   // i18n
   const t = useT();
   const tt = (key: string, vars?: Record<string, string | number>) =>
@@ -157,7 +204,11 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
     researchState.kind === "ready" ? researchState.research : null;
   const hasGenerated = generated.trim().length > 0;
   const busy =
-    generating || activeTransform != null || translating != null || isLocked;
+    generating ||
+    activeTransform != null ||
+    translating != null ||
+    answeringQuestions ||
+    isLocked;
 
   // sourceLanguage — language of the *original* job content. Critical: this
   // must NOT change when uiLanguage / outputLanguage changes, otherwise the
@@ -225,6 +276,78 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
   // inline "Regenerate" action button (right card) is the same — derive
   // once so the two stay in sync.
   const showAsRegenerate = hasGenerated && !inputChangedSinceGeneration;
+
+  // Screening-answer editing + merging the answers into the letter.
+  const updateAnswer = (i: number, value: string) =>
+    setAnswers((prev) =>
+      prev.map((a, idx) => (idx === i ? { ...a, answer: value } : a)),
+    );
+  const removeAnswer = (i: number) =>
+    setAnswers((prev) => prev.filter((_, idx) => idx !== i));
+  const combineAnswersIntoLetter = () => {
+    if (answers.length === 0) return;
+    const qa = answers
+      .map((a, i) => `${i + 1}. ${a.question}\n${a.answer}`)
+      .join("\n\n");
+    setGenerated((cur) => `${cur.trim()}\n\n—\n\n${tt("answers.heading")}\n\n${qa}`);
+    setAnswersCombined(true);
+    // Merging edits the letter — invalidate any saved copy.
+    if (savedAt) {
+      setSavedAt(null);
+      setSavedId(null);
+    }
+  };
+
+  // Answer the questions the user pasted, matched to their profile + this
+  // vacancy. Works independently of generating a letter (handy when a link
+  // blocks reading and the user pastes questions by hand).
+  async function handleAnswerQuestions() {
+    const questions = manualQuestions
+      .split("\n")
+      .map((q) => q.replace(/^\s*\d+[.)]\s*/, "").trim())
+      .filter(Boolean);
+    if (questions.length === 0) return;
+    setAnsweringQuestions(true);
+    setError(null);
+    try {
+      const jobText =
+        mode === "url" && research
+          ? researchToJobDescription(research)
+          : jobDescription;
+      const res = await fetch("/api/ai/screening-answers", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          questions,
+          jobDescription: jobText ? jobText.slice(0, 8000) : undefined,
+          targetLanguage: outputLanguage,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        answers?: Array<{ question: string; answer: string }>;
+        error?: string;
+        message?: string;
+      };
+      if (!res.ok) {
+        setError(buildAiError(res.status, data, tt));
+        return;
+      }
+      // Stack new answers onto the existing ones (dedupe by question) so
+      // answering another question never erases the earlier ones.
+      const incoming = Array.isArray(data.answers) ? data.answers : [];
+      setAnswers((prev) => mergeAnswers(prev, incoming));
+      // Clear the input so the next question starts fresh.
+      if (incoming.length > 0) setManualQuestions("");
+      setAnswersCombined(false);
+    } catch {
+      setError({
+        title: tt("errors.network_title"),
+        body: tt("errors.network_body"),
+      });
+    } finally {
+      setAnsweringQuestions(false);
+    }
+  }
 
   // Effective recipient name for the prompt. Explicit user input (even an
   // empty string deliberately cleared) wins over the auto-detected name
@@ -390,6 +513,11 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
         ...(channel === "direct" && recipientName
           ? { recipientName }
           : {}),
+        // Forward an explicit link selection only when the user customized
+        // it. Omitted = auto (AI includes relevant links, never forced).
+        ...(linkSelection !== null
+          ? { includeLinkUrls: linkSelection }
+          : {}),
       };
       const res = await fetch("/api/ai/cover-letter", {
         method: "POST",
@@ -399,6 +527,7 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
       const data = (await res.json().catch(() => ({}))) as {
         text?: string;
         language?: string;
+        answers?: Array<{ question: string; answer: string }>;
         error?: string;
         message?: string;
       };
@@ -407,6 +536,13 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
         return;
       }
       setGenerated(data.text ?? "");
+      // Auto-extracted answers stack onto any the user already has (dedupe by
+      // question) — regenerating never wipes manually-added answers.
+      const autoAnswers = Array.isArray(data.answers) ? data.answers : [];
+      if (autoAnswers.length > 0) {
+        setAnswers((prev) => mergeAnswers(prev, autoAnswers));
+        setAnswersCombined(false);
+      }
       // Server echoes back which language it actually wrote in. We trust
       // its response over the local `outputLanguage` so the meta strip
       // never disagrees with the letter on screen.
@@ -732,6 +868,13 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
             disabled={busy}
             t={tt}
           />
+          <LinkSelector
+            availableLinks={availableLinks}
+            selection={linkSelection}
+            onChange={setLinkSelection}
+            disabled={busy}
+            t={tt}
+          />
           {sourceLanguage &&
             sourceLanguage !== outputLanguage &&
             hasJobInput && (
@@ -813,7 +956,10 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
           <MetaRow meta={meta} t={tt} key={meta.at} />
         )}
         <div className="flex min-h-0 flex-1 flex-col">
-          {hasGenerated || generating ? (
+          {generating ? (
+            // Staged progress while the server drafts + humanizes the letter.
+            <GenerationProgress t={tt} />
+          ) : hasGenerated ? (
             <Textarea
               value={generated}
               onChange={(e) => {
@@ -828,15 +974,11 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
               disabled={busy}
               className="h-full min-h-0 flex-1 resize-none border-border bg-surface-elevated px-5 py-4 text-body leading-7 tracking-[0.005em] focus-visible:ring-1 focus-visible:ring-primary/40"
               placeholder={
-                generating
-                  ? tt("placeholders.generating")
-                  : translating
-                    ? tt("translation.translating", {
-                        target: tt(
-                          `language.${translating.toLowerCase()}`,
-                        ),
-                      })
-                    : undefined
+                translating
+                  ? tt("translation.translating", {
+                      target: tt(`language.${translating.toLowerCase()}`),
+                    })
+                  : undefined
               }
             />
           ) : (
@@ -920,6 +1062,25 @@ export function CoverLetterForm({ completeness: _completeness }: Props) {
         )}
       </Card>
 
+      {/* ----------- Full-width: application questions ----------- */}
+      {hasJobInput && (
+        <div className="lg:col-span-2">
+          <QuestionsPanel
+            questionsText={manualQuestions}
+            onQuestionsChange={setManualQuestions}
+            onAnswer={() => void run(handleAnswerQuestions)}
+            answering={answeringQuestions}
+            answers={answers}
+            onAnswerEdit={updateAnswer}
+            onAnswerRemove={removeAnswer}
+            onCombine={combineAnswersIntoLetter}
+            combined={answersCombined}
+            canCombine={hasGenerated}
+            disabled={busy}
+            t={tt}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -1734,6 +1895,307 @@ function SetupPanel({
           </SetupRow>
         )}
       </div>
+    </div>
+  );
+}
+
+// Generation progress. The server runs a real draft → humanize 2-pass; the
+// client steps these labels on a timer and the bar holds near the end until
+// the response actually arrives (the parent unmounts this once the letter is
+// set), so it never falsely shows 100%.
+const GEN_STAGES = [
+  "reading_profile",
+  "reading_job",
+  "matching",
+  "selecting_links",
+  "writing",
+  "humanizing",
+  "finalizing",
+] as const;
+
+function GenerationProgress({
+  t,
+}: {
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  const [step, setStep] = useState(0);
+  useEffect(() => {
+    setStep(0);
+    let i = 0;
+    const id = setInterval(() => {
+      i = Math.min(i + 1, GEN_STAGES.length - 1);
+      setStep(i);
+      if (i >= GEN_STAGES.length - 1) clearInterval(id);
+    }, 1600);
+    return () => clearInterval(id);
+  }, []);
+  // Cap at 92% — the final jump to "done" happens when the parent swaps this
+  // out for the finished letter.
+  const pct = Math.min(92, Math.round(((step + 1) / (GEN_STAGES.length + 1)) * 100));
+  return (
+    <div className="flex h-full min-h-0 flex-1 flex-col items-center justify-center rounded-lg border border-border bg-surface-elevated px-6 py-10">
+      <div className="w-full max-w-sm">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-small font-medium text-foreground">
+            {t("progress.title")}
+          </span>
+          <span className="text-label tabular-nums text-muted-foreground">
+            {pct}%
+          </span>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface">
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-700 ease-out"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <ul className="mt-5 space-y-2.5">
+          {GEN_STAGES.map((s, i) => {
+            const done = i < step;
+            const active = i === step;
+            return (
+              <li key={s} className="flex items-center gap-2.5 text-small">
+                <span
+                  className={cn(
+                    "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
+                    done
+                      ? "border-primary bg-primary"
+                      : active
+                        ? "border-primary"
+                        : "border-border",
+                  )}
+                >
+                  {active && (
+                    <Loader2 className="h-2.5 w-2.5 animate-spin text-primary" />
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    done
+                      ? "text-muted-foreground"
+                      : active
+                        ? "font-medium text-foreground"
+                        : "text-muted-foreground/60",
+                  )}
+                >
+                  {t(`progress.${s}`)}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+// Application-questions panel (full width, below both cards). The user can
+// paste a vacancy's questions and get profile-matched answers; auto-extracted
+// answers from generation land here too. Answers are editable; "Add to
+// letter" (once a letter exists) appends them as a Q&A section.
+function QuestionsPanel({
+  questionsText,
+  onQuestionsChange,
+  onAnswer,
+  answering,
+  answers,
+  onAnswerEdit,
+  onAnswerRemove,
+  onCombine,
+  combined,
+  canCombine,
+  disabled,
+  t,
+}: {
+  questionsText: string;
+  onQuestionsChange: (value: string) => void;
+  onAnswer: () => void;
+  answering: boolean;
+  answers: Array<{ question: string; answer: string }>;
+  onAnswerEdit: (index: number, value: string) => void;
+  onAnswerRemove: (index: number) => void;
+  onCombine: () => void;
+  combined: boolean;
+  canCombine: boolean;
+  disabled?: boolean;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  return (
+    <section className="rounded-xl border border-border bg-surface p-6 shadow-sm">
+      <CardHeader title={t("questions.title")} subtitle={t("questions.subtitle")} />
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Textarea
+            value={questionsText}
+            onChange={(e) => onQuestionsChange(e.target.value)}
+            placeholder={t("questions.placeholder")}
+            disabled={disabled}
+            className="min-h-[88px] bg-surface-elevated text-small leading-6"
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={onAnswer}
+            disabled={disabled || questionsText.trim().length === 0}
+          >
+            {answering ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4" />
+            )}
+            {answering ? t("questions.answering") : t("questions.answer")}
+          </Button>
+        </div>
+
+        {answers.length > 0 && (
+          <div className="rounded-lg border border-border bg-surface-elevated p-4">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-small font-semibold text-foreground">
+                {t("answers.section_title")} ({answers.length})
+              </span>
+              {combined ? (
+                <span className="text-label font-medium text-success">
+                  {t("answers.combined")}
+                </span>
+              ) : canCombine ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={onCombine}
+                  disabled={disabled}
+                >
+                  <Plus className="h-4 w-4" />
+                  {t("answers.combine")}
+                </Button>
+              ) : (
+                <span className="text-label text-muted-foreground">
+                  {t("answers.generate_first")}
+                </span>
+              )}
+            </div>
+            <ul className="mt-3 space-y-3">
+              {answers.map((a, i) => (
+                <li key={i}>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-small font-medium text-foreground">
+                      {i + 1}. {a.question}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => onAnswerRemove(i)}
+                      disabled={disabled}
+                      aria-label={t("answers.remove")}
+                      title={t("answers.remove")}
+                      className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface hover:text-destructive disabled:opacity-50"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <Textarea
+                    value={a.answer}
+                    onChange={(e) => onAnswerEdit(i, e.target.value)}
+                    disabled={disabled}
+                    className="mt-1 min-h-[64px] bg-surface text-small leading-6"
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// Link selector. Lets the user choose exactly which of their links (profile
+// Portfolio URL + eligible project links) the letter may reference. Default
+// is "Auto" (the server includes a link only when it fits the role, and
+// never force-adds an irrelevant one). Switching to manual reveals checkboxes
+// for an explicit set — including the option to exclude the profile portfolio.
+function LinkSelector({
+  availableLinks,
+  selection,
+  onChange,
+  disabled,
+  t,
+}: {
+  availableLinks: SelectableLink[];
+  selection: string[] | null;
+  onChange: (next: string[] | null) => void;
+  disabled?: boolean;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+}) {
+  if (availableLinks.length === 0) return null;
+  const isAuto = selection === null;
+  const selected = new Set(selection ?? []);
+  const toggle = (url: string) => {
+    const next = new Set(selected);
+    if (next.has(url)) next.delete(url);
+    else next.add(url);
+    onChange([...next]);
+  };
+  return (
+    <div className="rounded-lg border border-border bg-surface-elevated p-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-small font-medium text-foreground">
+          <Link2 className="h-4 w-4 text-muted-foreground" />
+          {t("links.title")}
+        </div>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => onChange(isAuto ? [] : null)}
+          className={cn(
+            "rounded-md px-2 py-1 text-label font-medium transition-colors",
+            "text-primary hover:bg-primary/10 disabled:opacity-50",
+          )}
+        >
+          {isAuto ? t("links.customize") : t("links.use_auto")}
+        </button>
+      </div>
+      <p className="mt-1 text-label text-muted-foreground">
+        {isAuto ? t("links.auto_hint") : t("links.manual_hint")}
+      </p>
+      {!isAuto && (
+        <ul className="mt-2 space-y-1">
+          {availableLinks.map((l) => {
+            const checked = selected.has(l.url);
+            return (
+              <li key={l.url}>
+                <label
+                  className={cn(
+                    "flex cursor-pointer items-start gap-2.5 rounded-md px-2 py-1.5 transition-colors hover:bg-surface",
+                    disabled && "cursor-not-allowed opacity-60",
+                  )}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={() => toggle(l.url)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[hsl(var(--primary))]"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1.5">
+                      <span className="truncate text-small text-foreground">
+                        {l.label}
+                      </span>
+                      {l.kind === "profile" && (
+                        <span className="shrink-0 rounded border border-border bg-surface px-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                          {t("links.profile_badge")}
+                        </span>
+                      )}
+                    </span>
+                    <span className="block truncate text-[11px] text-muted-foreground">
+                      {l.url}
+                    </span>
+                  </span>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

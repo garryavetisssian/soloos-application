@@ -22,8 +22,7 @@ import {
 } from "@/lib/profile-form";
 import { createClient } from "@/lib/supabase/server";
 import type { UserProfile } from "@/lib/types";
-import { scoreLink } from "@/lib/work-links/quality";
-import type { WorkLinkRow } from "@/lib/work-links/types";
+import { loadEligibleCoverLetterLinks } from "@/lib/work-links/eligible";
 
 // =============================================================
 // Gemini error → safe response shape.
@@ -101,6 +100,38 @@ async function generateWithFallback(prompt: string): Promise<string> {
   }
 }
 
+// JSON-mode variant for the screening-answers step (structured output).
+async function generateJsonWithFallback(prompt: string): Promise<string> {
+  const tryOnce = async (modelName: string) => {
+    const model = getGemini().getGenerativeModel({
+      model: modelName,
+      generationConfig: { responseMimeType: "application/json" },
+    });
+    const result = await model.generateContent(prompt);
+    return result.response.text().trim();
+  };
+  try {
+    return await tryOnce(GEMINI_MODEL);
+  } catch (err) {
+    if (!shouldRetryOnFallbackModel(err as { status?: number })) throw err;
+    return await tryOnce(GEMINI_FALLBACK_MODEL);
+  }
+}
+
+// Cheap gate so we only spend an AI call on jobs that plausibly contain
+// screening / application questions. The prompt itself returns an empty
+// array for false positives, so this can be permissive.
+function looksLikeScreeningQuestions(text: string): boolean {
+  if (!text) return false;
+  const hasQuestionMark = text.includes("?");
+  const numbered = /(^|\n)\s*\d+[.)]\s+\S/.test(text);
+  const cues =
+    /(answer the following|answer these|in your proposal|please answer|screening question|cover the following|why do you|why are you|tell us|describe your|what makes you|расскаж|ответьте|опишите|почему вы|why should we)/i.test(
+      text,
+    );
+  return (hasQuestionMark && cues) || (cues && numbered) || (hasQuestionMark && numbered);
+}
+
 const Body = z.object({
   jobDescription: z.string().min(1).max(8000),
   // Optional explicit output language. When the client sends this, it
@@ -135,6 +166,11 @@ const Body = z.object({
       recruiter_name: z.string().optional(),
     })
     .optional(),
+  // Explicit link selection from the UI multiselect. When present (even an
+  // empty array), the letter includes EXACTLY these link URLs and no others
+  // — the profile Portfolio URL is included only if it appears here. When
+  // omitted, links are AI-relevance-gated (auto) and never forced.
+  includeLinkUrls: z.array(z.string()).max(20).optional(),
 });
 
 export async function POST(request: Request) {
@@ -182,6 +218,7 @@ export async function POST(request: Request) {
     targetLanguage: clientLanguage,
     channel,
     recipientName,
+    includeLinkUrls,
   } = parsed.data;
 
   // Load the saved career profile server-side. The browser never sends it,
@@ -229,33 +266,31 @@ export async function POST(request: Request) {
   // for an English letter even though the JD is in Russian.
   const targetLanguage = clientLanguage ?? detectJobLanguage(jobDescription);
 
-  // Portfolio links: load the user's eligible-and-ready links so the
-  // prompt can weave one or two into the letter when relevant. We
-  // additionally filter out links whose computed quality score is
-  // below LINK_USAGE_THRESHOLD — a link with messy data (frames named
-  // "Frame 145", placeholder text) would feed garbage into the
-  // cover-letter prompt and produce incorrect claims. The toggle
-  // alone isn't enough; the data has to actually be usable.
-  const { data: portfolioRows } = await supabase
-    .from("work_links")
-    .select(
-      "id, user_id, url, type, title, summary, cover_letter_hint, thumbnail_url, status, use_in_cover_letter, quality_signals, last_checked_at, created_at, updated_at",
-    )
-    .eq("user_id", user.id)
-    .eq("status", "ready")
-    .eq("use_in_cover_letter", true)
-    .order("created_at", { ascending: false })
-    .limit(20);
-  const portfolioLinks = ((portfolioRows ?? []) as WorkLinkRow[])
-    .filter((row) => !scoreLink(row).blocked)
-    .slice(0, 6)
-    .map((row) => ({
-      url: row.url,
-      type: row.type,
-      title: row.title,
-      summary: row.summary,
-      cover_letter_hint: row.cover_letter_hint,
-    }));
+  // Portfolio links: load the user's eligible-and-ready links (quality-gated;
+  // the toggle alone isn't enough — the data has to be usable).
+  const eligibleLinks = await loadEligibleCoverLetterLinks(supabase, user.id);
+
+  // Link policy. When the client sent an explicit selection (multiselect),
+  // the letter uses EXACTLY those URLs: project links are filtered to the
+  // selection, and the profile Portfolio URL is included only if it's in the
+  // set. Otherwise it's "auto" — the prompt includes links only when they
+  // genuinely fit the role, and never force-adds an irrelevant one.
+  const profilePortfolioUrl = (profile.portfolio_url ?? "").trim();
+  let portfolioLinks = eligibleLinks;
+  let linkPolicy:
+    | { mode: "auto" }
+    | { mode: "explicit"; includeProfilePortfolio: boolean } = {
+    mode: "auto",
+  };
+  if (includeLinkUrls) {
+    const selected = new Set(includeLinkUrls);
+    portfolioLinks = eligibleLinks.filter((l) => selected.has(l.url));
+    linkPolicy = {
+      mode: "explicit",
+      includeProfilePortfolio:
+        profilePortfolioUrl.length > 0 && selected.has(profilePortfolioUrl),
+    };
+  }
 
   const prompt = PROMPTS.coverLetter(
     candidateProfile,
@@ -265,6 +300,7 @@ export async function POST(request: Request) {
     channel ?? "platform",
     recipientName ?? null,
     portfolioLinks,
+    linkPolicy,
   );
 
   let text: string;
@@ -307,14 +343,57 @@ export async function POST(request: Request) {
     );
   }
 
+  // Humanize pass — a standard part of every generation. Rewrites the draft
+  // so it reads like a real person wrote it (varied rhythm, contractions,
+  // fewer AI tells) while keeping every fact, name, URL, and link verbatim.
+  // Falls back to the draft if the pass fails, so generation never breaks.
+  let finalText = text;
+  try {
+    const humanized = await generateWithFallback(
+      PROMPTS.humanize(text, targetLanguage, channel ?? "platform"),
+    );
+    if (humanized && humanized.trim()) finalText = humanized.trim();
+  } catch (err) {
+    console.warn("[cover-letter] humanize pass failed; using draft", err);
+  }
+
+  // Screening / application questions (e.g. Upwork proposal questions). When
+  // the job text plausibly contains them, extract each and answer it grounded
+  // in the profile. Returned alongside the letter; the UI shows them below it
+  // and lets the user merge them in. Failures degrade to no answers.
+  let screeningAnswers: Array<{ question: string; answer: string }> = [];
+  if (looksLikeScreeningQuestions(jobDescription)) {
+    try {
+      const raw = await generateJsonWithFallback(
+        PROMPTS.screeningAnswers(jobDescription, candidateProfile, targetLanguage),
+      );
+      const parsed = JSON.parse(raw) as {
+        answers?: Array<{ question?: unknown; answer?: unknown }>;
+      };
+      screeningAnswers = (parsed.answers ?? [])
+        .map((a) => ({
+          question: String(a.question ?? "").trim(),
+          answer: String(a.answer ?? "").trim(),
+        }))
+        .filter((a) => a.question && a.answer)
+        .slice(0, 12);
+    } catch (err) {
+      console.warn("[cover-letter] screening answers failed", err);
+    }
+  }
+
   const { error: insertError } = await supabase.from("cover_letters").insert({
     user_id: user.id,
     job_description: jobDescription,
-    generated_text: text,
+    generated_text: finalText,
   });
   if (insertError) {
     console.error("[cover-letter] persist failed:", insertError);
   }
 
-  return NextResponse.json({ text, language: targetLanguage });
+  return NextResponse.json({
+    text: finalText,
+    language: targetLanguage,
+    answers: screeningAnswers,
+  });
 }

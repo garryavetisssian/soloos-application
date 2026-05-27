@@ -1,4 +1,37 @@
 {
+  "links": {
+    "title": "Links to include",
+    "customize": "Customize",
+    "use_auto": "Use auto",
+    "auto_hint": "Auto — the letter includes a link only when it fits this role.",
+    "manual_hint": "Pick exactly which links the letter may use. Unchecked links are never added.",
+    "profile_badge": "Profile"
+  },
+  "questions": {
+    "title": "Application questions",
+    "subtitle": "Paste any questions this job asks (one per line) and get answers matched to your profile.",
+    "placeholder": "Paste the application / screening questions here, one per line…",
+    "answer": "Answer questions",
+    "answering": "Answering…"
+  },
+  "answers": {
+    "section_title": "Answers",
+    "combine": "Add to letter",
+    "combined": "Added to letter",
+    "heading": "Answers to your questions",
+    "generate_first": "Generate a letter to merge",
+    "remove": "Remove"
+  },
+  "progress": {
+    "title": "Writing your cover letter",
+    "reading_profile": "Reading your profile",
+    "reading_job": "Reading the job description",
+    "matching": "Matching your experience to the role",
+    "selecting_links": "Selecting relevant links",
+    "writing": "Writing the draft",
+    "humanizing": "Humanizing the writing",
+    "finalizing": "Final polish"
+  },
   "page": {
     "title": "Cover letters",
     "subtitle": "Generate tailored applications using your SoloOS profile."

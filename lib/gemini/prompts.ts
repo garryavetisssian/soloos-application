@@ -396,6 +396,17 @@ ${text}`;
       summary?: string | null;
       cover_letter_hint?: string | null;
     }> = [],
+    // How the candidate's links may be used:
+    //   auto     → AI includes a link ONLY when it genuinely fits the role;
+    //              nothing is forced (an irrelevant link hurts the letter).
+    //   explicit → the candidate hand-picked exactly which links may appear;
+    //              include those and NO others. `includeProfilePortfolio`
+    //              says whether the profile "Portfolio:" URL is in that set.
+    linkPolicy:
+      | { mode: "auto" }
+      | { mode: "explicit"; includeProfilePortfolio: boolean } = {
+      mode: "auto",
+    },
   ) => {
     const employerBlock = jobResearch
       ? `
@@ -411,14 +422,13 @@ EMPLOYER CONTEXT (from the job page${jobResearch.url ? ` at ${jobResearch.url}` 
 When writing the "why this role/company is interesting" beat, naturally reference one or two specific details from this employer context (the product, the company's focus, the tone). Do NOT write "I researched your company" or "based on my research" or similar meta-statements — just sound like you genuinely know the product/company.`
       : "";
 
-    // Portfolio links — supplemental specific-project references that
-    // sit ALONGSIDE the profile's single Portfolio URL (which is
-    // unconditional and lives in beat 4 of the letter). The prompt
-    // tells Gemini these are extra project mentions, never substitutes
-    // for the profile URL.
-    const portfolioBlock =
+    // Links policy block. Replaces the old "portfolio URL is always
+    // mandatory" rule — links are now either AI-relevance-gated (auto) or
+    // exactly the candidate's hand-picked set (explicit). An irrelevant
+    // link is never forced into the letter.
+    const projectLinksList =
       portfolioLinks.length > 0
-        ? `\n\nADDITIONAL PROJECT LINKS (the candidate's specific public work — these SUPPLEMENT the profile Portfolio URL, they NEVER replace it):
+        ? `\n\nPROJECT LINKS available${linkPolicy.mode === "explicit" ? " (the candidate selected these)" : ""}:
 ${portfolioLinks
   .map((l, i) => {
     const lines: string[] = [];
@@ -430,15 +440,35 @@ ${portfolioLinks
       lines.push(`   When to mention: ${l.cover_letter_hint}`);
     return lines.join("\n");
   })
-  .join("\n\n")}
-
-HOW TO USE THESE PROJECT LINKS (read this carefully):
-- The profile Portfolio URL (the "Portfolio: <url>" line in the candidate profile) is ALREADY mandatory in the closing — it must always be referenced. The links here are EXTRA, they do not replace it.
-- You MAY pick ONE of these project links to name SPECIFICALLY inside the body when it's a strong match for the role (e.g. you're describing a relevant past project — name it + drop the URL inline). Skip them entirely when nothing is a strong match — that's fine.
-- When you do reference one, weave it INTO a sentence that already does meaningful work — name the project + a short concrete description (drawn from "What's inside") + the URL. Example: "I designed Duck Master — a mobile card-game with progression UI and a full UI kit — you can see the flows at https://www.figma.com/design/abc/…". Never write a separate "Here are my links:" block.
-- Use the URLs VERBATIM. Never invent URLs, never paraphrase them, never substitute one link for another.
-- It's fine to include both a specific project link in the body AND the profile Portfolio URL in the closing — they serve different jobs (one names a project, one points to the overall portfolio).`
+  .join("\n\n")}`
         : "";
+
+    const linkRules =
+      linkPolicy.mode === "explicit"
+        ? [
+            "LINKS — the candidate has hand-picked EXACTLY which links may appear. Follow this precisely:",
+            linkPolicy.includeProfilePortfolio
+              ? '- Include the profile Portfolio URL (the "Portfolio: <url>" line) once, naturally, in the closing. VERBATIM.'
+              : '- Do NOT include the profile Portfolio URL. The candidate deliberately excluded it.',
+            portfolioLinks.length > 0
+              ? "- Reference the selected PROJECT LINK(S) below — weave each into a sentence that does real work (name the project + one concrete detail from \"What's inside\" + the URL inline). Never a bare \"my links:\" list."
+              : "",
+            "- Include NO link that is not listed here. Never invent, paraphrase, or substitute a link. If there is nothing to include, include no links at all.",
+          ]
+            .filter(Boolean)
+            .join("\n")
+        : [
+            "LINKS — include a link ONLY when it genuinely fits THIS role. Never add a link just to have one; an unrelated link weakens the letter.",
+            '- The profile Portfolio URL (the "Portfolio: <url>" line): reference it once in the closing ONLY if the candidate\'s portfolio is relevant to this role. If the role is unrelated to what that portfolio represents, omit it silently.',
+            portfolioLinks.length > 0
+              ? "- You MAY name ONE project link below if it is a strong match — weave it into a meaningful sentence (project name + concrete detail + URL inline). Skip all of them when none clearly fit."
+              : "",
+            "- Use URLs VERBATIM. Never invent, paraphrase, or substitute a link.",
+          ]
+            .filter(Boolean)
+            .join("\n");
+
+    const portfolioBlock = `\n\n${linkRules}${projectLinksList}`;
 
     // The recipient — explicit user input wins over auto-detected name.
     // Normalize "" to undefined so the prompt branch doesn't see empty
@@ -476,7 +506,7 @@ STRUCTURE:
 1. One-line greeting (see RECIPIENT above).
 2. One sentence: who I am + why I'm reaching out about this specific role / product. Specific. Not generic.
 3. Two short sentences: the most concrete, relevant thing in my background that makes me a fit. No lists, no buzzwords.
-4. PORTFOLIO URL — UNCONDITIONALLY MANDATORY whenever the candidate profile contains a "Portfolio: <url>" line. Include it on its own short line right before the soft ask, e.g. "Recent work: <url>" / "Portfolio: <url>" / "Портфолио: <url>" / "Պորտֆոլիո՝ <url>". One line, one URL, VERBATIM from the profile. There is no scenario in which you can skip it when the profile lists one — not even if the role seems unrelated, not even if you already named a project earlier. Never invent one, never substitute LinkedIn or any other link, never replace it with a URL from the ADDITIONAL PROJECT LINKS section (those are SUPPLEMENTAL, not substitutes). Only skip this beat — silently — if the profile genuinely does not contain a "Portfolio:" line.
+4. A link line — ONLY per the LINKS rules below. When a link is to be included, put it on its own short line right before the soft ask, e.g. "Recent work: <url>" / "Portfolio: <url>" / "Портфолио: <url>" / "Պորտֆոլիո՝ <url>" — one line, one URL, VERBATIM. If the LINKS rules yield no link (nothing relevant, or the candidate excluded it), skip this beat entirely and go straight to the ask.
 5. One soft, low-pressure ask ("happy to share more if useful", "would a quick chat make sense?"). Natural, not pushy.
 6. Sign-off: ${resolvedRecipient ? "use a casual close ('Thanks,' / 'Best,' / 'Cheers,' — pick whichever fits the language) and the candidate's FIRST NAME only on the next line." : "casual close + first name only."}
 
@@ -525,7 +555,7 @@ STRUCTURE — keep these four beats, in this order:
 1. Short, warm greeting.
 2. One or two sentences on why this role / company / product is genuinely interesting. Be specific to what's in the job description.
 3. Two or three sentences connecting the candidate's real experience to what the role asks for. Concrete, not generic.
-4. Short closing. PORTFOLIO URL — UNCONDITIONALLY MANDATORY whenever the candidate profile contains a "Portfolio: <url>" line. This is non-negotiable: every cover letter must reference that exact URL once, naturally, inside the closing paragraph. There is no scenario in which you can skip it when the profile lists one. Even if the role seems unrelated, even if there are also project links available, even if the letter feels complete without it — include the profile Portfolio URL. Example phrasings: "You can see recent work at <url>." (English), "Мои недавние работы: <url>." (Russian), "Իմ վերջին աշխատանքները՝ <url>։" (Armenian). Use the URL VERBATIM — never invented, never paraphrased, never replaced with a placeholder, never substituted with a project URL from the ADDITIONAL PROJECT LINKS section. The profile Portfolio URL and a project URL serve different purposes and can both appear (project URL in the body, profile Portfolio URL in the closing). If — and ONLY if — the candidate profile genuinely does not contain a "Portfolio:" line at all, skip this beat silently; never invent one, never substitute LinkedIn.
+4. Short closing. Reference links ONLY per the LINKS rules below — woven naturally into the closing, never as a bare list. Use any URL VERBATIM. If the LINKS rules yield no link (nothing relevant to this role, or the candidate excluded it), simply close without one — do not force a link in.
 
 STYLE:
 - Short sentences. Aim for 10–18 words each. Avoid long winding paragraphs.
@@ -569,6 +599,82 @@ ${candidateProfile}
 ---
 Job description:
 ${safeUserInput("job_description", jobDescription)}${employerBlock}${portfolioBlock}
+`;
+  },
+
+  // Humanize pass — runs on the generated draft so the final letter reads
+  // like a real person wrote it by hand, not like AI output. Preserves every
+  // fact, name, URL, and link verbatim; only changes voice, rhythm, and word
+  // choice. Standard step in the generation flow.
+  humanize: (
+    draft: string,
+    targetLanguage: "English" | "Russian" | "Armenian",
+    channel: "platform" | "direct" = "platform",
+  ) =>
+    `You are editing a candidate's own ${channel === "direct" ? "short direct message" : "cover letter"} so it reads as if a real person wrote it by hand. Rewrite the TEXT below, in ${targetLanguage}.
+
+MAKE IT SOUND HUMAN:
+- Vary sentence length and rhythm — mix short, punchy sentences with longer ones. Avoid a uniform, even cadence.
+- Use natural everyday wording and contractions where the language allows ("I'm", "I've", "didn't"). Plain words over fancy ones.
+- Let it breathe: a slightly informal aside or a direct, simple statement is good. It should not feel "polished by a machine."
+- Be concrete and specific. Prefer a real detail over abstract praise.
+
+REMOVE THE AI TELLS (do not use these patterns):
+- Openers like "I am writing to express my interest", "I am excited to apply", "I am thrilled".
+- Buzzwords / clichés: "delve", "leverage", "tapestry", "moreover", "furthermore", "in today's fast-paced world", "passionate about", "proven track record", "synergy", "spearheaded".
+- Over-symmetric structure: stacked three-item lists, every paragraph the same length, perfectly balanced clauses.
+- Em-dash overuse and decorative punctuation. Hollow superlatives and generic enthusiasm.
+
+KEEP EXACTLY (non-negotiable):
+- Do NOT add new facts, skills, achievements, or claims. Do NOT invent anything. If it's not in the draft, it doesn't go in.
+- Keep every concrete detail, company / product / person name, and URL VERBATIM. Keep any links exactly as they appear, in the same place.
+- Keep the same language (${targetLanguage}), the same overall structure, greeting, closing, signature, and roughly the same length.
+- Keep it honest and professional — human and natural, never sloppy or unprofessional.
+
+Output ONLY the rewritten text. No preamble, no commentary, no markdown fences, no notes about what you changed.
+
+---
+TEXT TO REWRITE:
+${safeUserInput("draft", draft)}
+`,
+
+  // Screening / application questions. Some postings (Upwork especially) ask
+  // the applicant to answer specific questions. This extracts any such
+  // questions from the job text and writes a grounded answer to each. Returns
+  // an empty array when the posting asks none.
+  screeningAnswers: (
+    jobText: string,
+    candidateProfile: string,
+    targetLanguage: "English" | "Russian" | "Armenian",
+    // When provided, answer exactly these (the user pasted them); otherwise
+    // extract the questions from the job text.
+    knownQuestions?: string[] | null,
+  ) => {
+    const explicit = !!knownQuestions && knownQuestions.length > 0;
+    const taskBlock = explicit
+      ? `Answer EACH of the QUESTIONS below — these are the questions the applicant must respond to. Use the JOB TEXT only for context. Answer every question; never drop one.
+
+QUESTIONS:
+${knownQuestions!.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
+      : `Read the JOB TEXT, find any screening / application questions the applicant is explicitly asked to answer (numbered proposal questions, lines after "answer the following" / "in your proposal", direct questions, "tell us about…", "describe…"), and answer EACH. Do NOT invent questions, and do NOT turn responsibilities/requirements into questions unless the posting asks the applicant to respond. If the posting asks NONE, return {"answers": []}.`;
+    return `Some job postings ask the applicant to answer specific screening / application questions (common on Upwork; also "Why do you want this role?"-style prompts). ${taskBlock}
+
+Write a genuine answer to each, grounded ONLY in the candidate profile.
+
+RULES:
+- Write every answer in ${targetLanguage}. Keep each answer concise (1–4 sentences), specific, and human — natural rhythm, contractions where natural, no buzzwords, no "I am writing to express", no clichés.
+- Ground every claim in the candidate profile. NEVER invent facts, employers, numbers, tools, or skills the profile doesn't support. If the profile lacks the basis for an honest answer, answer briefly and truthfully rather than fabricating.
+- Keep the question text faithful (render it in ${targetLanguage} if it was in another language, preserving exact meaning). Keep URLs and names verbatim.
+
+Output ONLY JSON: {"answers":[{"question":"<question>","answer":"<answer>"}]}. No markdown, no commentary.
+
+---
+CANDIDATE PROFILE:
+${candidateProfile}
+
+---
+JOB TEXT:
+${safeUserInput("job_text", jobText)}
 `;
   },
 } as const;
