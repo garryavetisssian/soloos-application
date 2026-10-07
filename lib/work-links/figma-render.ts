@@ -12,6 +12,7 @@
 // are free at the volumes we're at.
 
 import sharp from "sharp";
+import { safeFetch } from "@/lib/safe-fetch";
 import { fetchWithRetryOn429 } from "./figma";
 
 const FIGMA_API_BASE = "https://api.figma.com/v1";
@@ -124,14 +125,15 @@ async function renderAndDownloadOne(
 }
 
 async function downloadPng(url: string): Promise<RenderedImage> {
-  const res = await fetch(url, {
+  const fetched = await safeFetch(url, { timeoutMs: DOWNLOAD_TIMEOUT_MS, maxBytes: MAX_IMAGE_BYTES, init: {
     headers: {
       // Figma always serves WebP regardless of Accept; we accept
       // anything and re-encode below.
       accept: "image/png,image/webp,image/jpeg,image/*;q=0.8",
     },
-    signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
-  });
+  } });
+  if (!fetched.ok) throw new Error(`download ${fetched.reason}`);
+  const res = fetched.response;
   if (!res.ok) throw new Error(`download ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());
   if (buf.byteLength > MAX_IMAGE_BYTES) {
@@ -150,7 +152,8 @@ async function downloadPng(url: string): Promise<RenderedImage> {
   if (mime === "image/png") {
     return { mimeType: "image/png", base64: buf.toString("base64") };
   }
-  const png = await sharp(buf).png().toBuffer();
+  const png = await sharp(buf, { limitInputPixels: 20_000_000 }).resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true }).png().toBuffer();
+  if (png.length > MAX_IMAGE_BYTES) throw new Error("Image exceeds size limit");
   return { mimeType: "image/png", base64: png.toString("base64") };
 }
 

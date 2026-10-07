@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  const configured = Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
   async function signInWithGoogle() {
+    if (!configured) return;
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
       provider: "google",
@@ -50,10 +52,11 @@ export default function LoginPage() {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button className="w-full" size="lg" onClick={signInWithGoogle}>
+          <Button className="w-full" size="lg" disabled={!configured} onClick={signInWithGoogle}>
             <GoogleIcon />
             Continue with Google
           </Button>
+          {!configured && <p role="status" className="text-small text-muted-foreground">Source preview: sign-in is unavailable until the optional services are configured. The public site can be explored without an account.</p>}
 
           <ul className="space-y-2 text-small text-muted-foreground">
             <Perk>Build CVs and AI cover letters</Perk>

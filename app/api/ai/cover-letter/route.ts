@@ -94,7 +94,6 @@ async function generateWithFallback(prompt: string): Promise<string> {
       primary: GEMINI_MODEL,
       fallback: GEMINI_FALLBACK_MODEL,
       status: e.status,
-      message: e.message,
     });
     return await tryOnce(GEMINI_FALLBACK_MODEL);
   }
@@ -314,16 +313,12 @@ export async function POST(request: Request) {
       errorDetails?: unknown;
       stack?: string;
     };
-    // Verbose log on the server only — useful for diagnosis. The client
-    // never sees this object.
+    // SDK messages may contain request URLs or applicant content.
     console.error("[cover-letter] Gemini error after fallback", {
       primaryModel: GEMINI_MODEL,
       fallbackModel: GEMINI_FALLBACK_MODEL,
       status: e.status,
       statusText: e.statusText,
-      message: e.message,
-      errorDetails: e.errorDetails,
-      stack: e.stack,
     });
     const normalized = normalizeAiError(e);
     return NextResponse.json(normalized, {
@@ -354,7 +349,7 @@ export async function POST(request: Request) {
     );
     if (humanized && humanized.trim()) finalText = humanized.trim();
   } catch (err) {
-    console.warn("[cover-letter] humanize pass failed; using draft", err);
+    console.warn("[cover-letter] humanize pass failed; using draft", { status: (err as { status?: number }).status });
   }
 
   // Screening / application questions (e.g. Upwork proposal questions). When
@@ -378,7 +373,7 @@ export async function POST(request: Request) {
         .filter((a) => a.question && a.answer)
         .slice(0, 12);
     } catch (err) {
-      console.warn("[cover-letter] screening answers failed", err);
+      console.warn("[cover-letter] screening answers failed", { status: (err as { status?: number }).status });
     }
   }
 

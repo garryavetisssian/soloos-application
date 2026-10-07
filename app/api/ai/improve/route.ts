@@ -46,7 +46,6 @@ async function generateWithFallback(prompt: string): Promise<string> {
       primary: GEMINI_MODEL,
       fallback: GEMINI_FALLBACK_MODEL,
       status: e.status,
-      message: e.message,
     });
     return await tryOnce(GEMINI_FALLBACK_MODEL);
   }
@@ -99,7 +98,6 @@ export async function POST(request: Request) {
       mode,
       status: e.status,
       statusText: e.statusText,
-      message: e.message,
     });
     if (isOverloaded(e)) {
       return NextResponse.json(

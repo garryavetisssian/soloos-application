@@ -76,11 +76,11 @@ export async function POST(request: Request) {
     summary = result.response.text().trim().replace(/^["']|["']$/g, "");
   } catch (err) {
     const e = err as { message?: string; status?: number };
-    console.error("[profile-summary] Gemini error", e);
+    console.error("[profile-summary] Gemini error", { status: e.status });
     return NextResponse.json(
       {
         error: "ai_failed",
-        message: e.message ?? "AI summary failed.",
+        message: "AI summary failed. Please try again.",
         upstreamStatus: e.status ?? null,
       },
       { status: 502 },

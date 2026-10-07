@@ -253,8 +253,6 @@ export async function POST(request: Request) {
       fallback: GEMINI_FALLBACK_MODEL,
       status: e.status,
       statusText: e.statusText,
-      message: e.message,
-      errorDetails: e.errorDetails,
     });
     return NextResponse.json(
       {
@@ -272,8 +270,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("[job-research] JSON parse failed", {
       url: parsed.data.url,
-      raw,
-      err,
+      name: (err as Error).name,
     });
     return NextResponse.json(
       {

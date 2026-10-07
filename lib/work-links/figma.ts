@@ -35,9 +35,12 @@ export async function fetchWithRetryOn429(
   let attempt = 0;
   let res: Response;
   while (true) {
+    const target = new URL(url);
+    if (target.origin !== FIGMA_API_BASE.replace(/\/v1$/, "")) throw new Error("Unexpected Figma API origin");
     res = await fetch(url, {
       ...init,
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      redirect: "error",
     });
     if (res.status !== 429 || attempt >= RETRY_MAX_ATTEMPTS - 1) return res;
     // Use server-provided Retry-After if reasonable; otherwise the

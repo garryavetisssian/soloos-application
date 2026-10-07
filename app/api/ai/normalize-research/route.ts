@@ -94,7 +94,6 @@ export async function POST(request: Request) {
     const e = err as { status?: number; message?: string };
     console.error("[normalize-research] Gemini error", {
       status: e.status,
-      message: e.message,
     });
     const overloaded =
       e.status === 503 ||

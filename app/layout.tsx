@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono, Noto_Sans_Armenian } from "next/font/google";
 import "./globals.css";
 
@@ -54,7 +55,7 @@ export default function RootLayout({
     >
       <head>
         {/* No-flash theme init — blocking head script, runs before paint. */}
-        <script src="/theme-init.js" />
+        <Script src="/theme-init.js" strategy="beforeInteractive" />
       </head>
       <body className="min-h-screen font-sans">{children}</body>
     </html>

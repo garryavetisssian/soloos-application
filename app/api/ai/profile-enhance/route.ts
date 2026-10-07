@@ -190,8 +190,6 @@ export async function POST(request: Request) {
       mode: extraction.mode,
       status: e.status,
       statusText: e.statusText,
-      errorDetails: e.errorDetails,
-      message: e.message,
     });
     return NextResponse.json(
       {
@@ -210,7 +208,7 @@ export async function POST(request: Request) {
     const obj = JSON.parse(raw);
     output = Output.parse(obj);
   } catch (err) {
-    console.error("[profile-enhance] JSON parse failed", { raw, err });
+    console.error("[profile-enhance] JSON validation failed", { name: (err as Error).name });
     return NextResponse.json(
       {
         error: "invalid_ai_response",

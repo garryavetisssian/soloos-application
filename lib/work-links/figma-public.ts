@@ -21,6 +21,7 @@
 // thumbnail and no real title).
 
 import * as cheerio from "cheerio";
+import { safeFetch } from "@/lib/safe-fetch";
 import { parseFigmaFileKey } from "./figma";
 
 const FETCH_TIMEOUT_MS = 15_000;
@@ -59,15 +60,15 @@ export async function extractFigmaFilePublic(
 
   let html: string;
   try {
-    const res = await fetch(rawUrl, {
+    const fetched = await safeFetch(rawUrl, { timeoutMs: FETCH_TIMEOUT_MS, maxBytes: 2 * 1024 * 1024, init: {
       headers: {
         "user-agent": BROWSER_UA,
         accept: "text/html,application/xhtml+xml",
         "accept-language": "en,en-US;q=0.9",
       },
-      redirect: "follow",
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    });
+    } });
+    if (!fetched.ok) return { ok: false, reason: "fetch_failed" };
+    const res = fetched.response;
     if (res.status === 404) {
       return { ok: false, reason: "private_or_not_found" };
     }

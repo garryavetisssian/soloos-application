@@ -9,9 +9,9 @@ export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
-    // No Supabase credentials configured yet — let requests through so the
-    // scaffold is browsable. Auth-protected routes will fail at the data layer
-    // until env vars are set in .env.local.
+    // Public pages remain browsable without services; never bypass auth.
+    if (request.nextUrl.pathname.startsWith("/api/")) return NextResponse.json({ error: "Services are not configured in this source-only installation." }, { status: 503 });
+    if (/^\/(dashboard|cvs|resumes|cover-letters|jobs|settings|onboarding|portfolio)(\/|$)/.test(request.nextUrl.pathname)) return NextResponse.redirect(new URL("/login", request.url));
     return response;
   }
 
@@ -42,6 +42,7 @@ export async function updateSession(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
   const isProtected =
+    pathname.startsWith("/portfolio") ||
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/cvs") ||
     pathname.startsWith("/resumes") || // legacy path — redirected, but middleware still gates auth

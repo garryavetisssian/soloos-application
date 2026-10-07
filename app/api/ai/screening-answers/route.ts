@@ -104,7 +104,7 @@ export async function POST(request: Request) {
   try {
     raw = await generateJsonWithFallback(prompt);
   } catch (err) {
-    console.error("[screening-answers] Gemini error after fallback", err);
+    console.error("[screening-answers] Gemini error after fallback", { status: (err as { status?: number }).status });
     return NextResponse.json(
       {
         error: "ai_failed",
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
       .filter((a) => a.question && a.answer)
       .slice(0, 20);
   } catch (err) {
-    console.error("[screening-answers] JSON parse failed", { raw, err });
+    console.error("[screening-answers] JSON validation failed", { name: (err as Error).name });
     return NextResponse.json(
       { error: "invalid_ai_response", message: "Try again in a moment." },
       { status: 502 },
