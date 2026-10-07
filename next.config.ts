@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
   // works locally but fails in production with ENOENT.
   outputFileTracingIncludes: {
     "/api/export/cover-letter-pdf": ["./lib/export/fonts/**/*.ttf"],
+    "/api/export/cv-pdf": ["./lib/export/fonts/**/*.ttf"],
   },
   async redirects() {
     return [

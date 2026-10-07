@@ -13,6 +13,7 @@ SoloOS is experimental source code, not a security-certified production service.
 - Figma API tokens are restricted to the API origin and redirects are rejected.
 - The shared client-writable Figma cache is disabled. The included migration removes authenticated access while preserving rows.
 - Private environment files are ignored. Publication checks scan common credential patterns in source and reachable history, without printing values. They are not exhaustive.
+- CV/application APIs validate bounded input, reject cross-origin mutations and scope every read/update/delete to the signed-in user. Linked cover letters must belong to that same user. Legacy unsafe job links are not rendered. CV PDFs use bundled fonts and authenticated exports; they do not fetch user-supplied URLs.
 
 ## Remaining limitations
 

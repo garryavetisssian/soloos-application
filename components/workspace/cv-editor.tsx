@@ -1,0 +1,27 @@
+"use client";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { CvDocument, type CvRecord } from "@/lib/workspace/model";
+import { workspaceCopy } from "@/lib/workspace/copy";
+import { control, Field, useWorkspaceCopy, workspaceApi } from "./shared";
+const personal = ["title", "full_name", "position", "email", "phone", "location", "linkedin_url", "portfolio_url"] as const;
+const sections = ["summary", "experience", "education", "skills", "projects", "languages"] as const;
+export function CvEditor({ id }: { id: string }) {
+  const c = useWorkspaceCopy(), router = useRouter();
+  const [draft, setDraft] = useState<CvDocument | null>(null), [saved, setSaved] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState<"error" | "invalid" | "">(""), [leave, setLeave] = useState(false);
+  const dirty = !!draft && JSON.stringify(draft) !== saved;
+  const load = useCallback(async () => { setError(""); try { const row = await workspaceApi<CvRecord>(`/api/workspace/cvs/${id}`); setDraft(row.document); setSaved(JSON.stringify(row.document)); } catch { setError("error"); } }, [id]);
+  useEffect(() => { void load(); }, [load]);
+  useEffect(() => { if (!dirty) return; const guard = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; }; window.addEventListener("beforeunload", guard); return () => window.removeEventListener("beforeunload", guard); }, [dirty]);
+  async function save() { if (!draft) return; setBusy(true); setError(""); try { const row = await workspaceApi<CvRecord>(`/api/workspace/cvs/${id}`, "PUT", draft); setDraft(row.document); setSaved(JSON.stringify(row.document)); } catch (e) { setError(e instanceof Error && e.message === "invalid" ? "invalid" : "error"); } finally { setBusy(false); } }
+  async function download() { if (!draft || !CvDocument.safeParse(draft).success || !draft.full_name.trim()) { setError("invalid"); return; } setBusy(true); setError(""); try { const res = await fetch("/api/export/cv-pdf", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft) }); if (!res.ok) throw new Error(); const url = URL.createObjectURL(await res.blob()); const a = document.createElement("a"); a.href = url; a.download = `CV_${draft.language.toUpperCase()}.pdf`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); } catch { setError("error"); } finally { setBusy(false); } }
+  if (!draft) return <main className="p-8">{error ? <><p role="alert">{c.error}</p><Button onClick={() => void load()}>{c.retry}</Button></> : c.loading}</main>;
+  const p = workspaceCopy[draft.language];
+  return <main className="mx-auto max-w-7xl px-4 py-8 sm:px-8"><header className="mb-6 flex flex-wrap items-center justify-between gap-3"><Button variant="ghost" disabled={busy} onClick={() => dirty ? setLeave(true) : router.push("/cvs")}>{c.back}</Button><div className="flex flex-wrap items-center gap-3"><span role="status" className="text-sm text-muted-foreground">{dirty ? c.unsaved : c.saved}</span><Button variant="outline" disabled={busy} onClick={() => void download()}>{c.download}</Button><Button disabled={busy} onClick={() => void save()}>{busy ? c.saving : c.save}</Button></div></header>
+    {leave && <div className="mb-5 flex flex-wrap items-center gap-3 rounded-lg border border-border p-4">{c.unsaved}<Button variant="outline" onClick={() => setLeave(false)}>{c.cancel}</Button><Button onClick={() => router.push("/cvs")}>{c.back}</Button></div>}
+    {error && <p role="alert" className="mb-5">{c[error]}</p>}
+    <div className="grid min-w-0 gap-8 lg:grid-cols-2"><fieldset disabled={busy} className="min-w-0"><div className="grid gap-4 sm:grid-cols-2">{personal.map(key => <Field key={key} label={c[key]}><input className={control} value={draft[key]} maxLength={key.endsWith("url") ? 2000 : 300} type={key === "email" ? "email" : key.endsWith("url") ? "url" : "text"} onChange={e => setDraft({ ...draft, [key]: e.target.value })} /></Field>)}<Field label={c.language}><select className={control} value={draft.language} onChange={e => setDraft({ ...draft, language: e.target.value as CvDocument["language"] })}><option value="en">English</option><option value="ru">Русский</option><option value="hy">Հայերեն</option></select></Field></div><p className="my-5 text-sm text-muted-foreground">{c.sectionsHint}</p><div className="space-y-4">{sections.map(key => <Field key={key} label={c[key]}><textarea className={control} rows={key === "experience" ? 8 : 4} maxLength={10000} value={draft[key]} onChange={e => setDraft({ ...draft, [key]: e.target.value })} /></Field>)}</div></fieldset>
+    <section className="min-w-0" aria-label={c.preview}><h2 className="mb-3 text-sm text-muted-foreground">{c.preview}</h2><article className="min-w-0 break-words rounded-lg bg-white p-6 font-sans text-gray-900 shadow-sm sm:p-10"><h1 className="text-2xl font-bold">{draft.full_name || p.full_name}</h1><p className="mt-1 text-base">{draft.position}</p><p className="mt-3 whitespace-pre-wrap text-xs">{[draft.location, draft.phone, draft.email, draft.linkedin_url, draft.portfolio_url].filter(Boolean).join(" | ")}</p>{sections.filter(key => draft[key].trim()).map(key => <section key={key} className="mt-6"><h2 className="mb-2 text-sm font-bold">{p[key]}</h2><p className="whitespace-pre-wrap text-sm leading-relaxed">{draft[key]}</p></section>)}</article></section></div>
+  </main>;
+}

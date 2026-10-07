@@ -47,7 +47,9 @@ Apply all SQL migrations in `supabase/migrations/` in filename order to your own
 
 CV PDF import and profile normalization, public job research, contextual cover-letter drafting, improve/rewrite/shorten/expand/translate actions, screening-question answers, saved letters and multilingual letter PDF export are implemented. Optional public Figma link enrichment supplies portfolio evidence.
 
-The CV-builder and job-tracker pages are unfinished scaffolds. General portfolio extraction is also incomplete. This is an experiment, not a completed production service or client assignment.
+The CV builder supports profile-prefilled documents, editable sections, live preview, duplication and multilingual PDF download. The application tracker supports search, five statuses, notes, follow-up dates and links to saved cover letters. Both persist per-user data behind authenticated APIs and the existing database ownership policies.
+
+To keep this MVP simple, CV content is stored as versioned JSON in `resumes.summary`, and application metadata in `jobs.notes`. Legacy plain-text values remain readable. No additional database migration is required for these features. General portfolio extraction remains incomplete. This is an experiment, not a completed production service or client assignment.
 
 ## Project structure
 
@@ -58,7 +60,7 @@ app/
     dashboard/
     cvs/  cvs/[id]/             Planned builder / editor scaffold
     cover-letters/              AI cover letter generator
-    jobs/                       Planned tracker scaffold
+    jobs/                       Application tracker
     settings/
   api/ai/                       Gemini-backed endpoints
   auth/callback/                Supabase OAuth callback
